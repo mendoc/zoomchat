@@ -1,0 +1,37 @@
+# Fichiers à ignorer lors du déploiement sur GCP Cloud Functions
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Tests
+test/
+tests/
+*.test.js
+*.spec.js
+coverage/
+
+# Documentation locale
+README.md
+CLAUDE.md
+LICENSE
+
+# Divers
+.DS_Store
+*.log
