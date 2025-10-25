@@ -6,8 +6,10 @@ Un assistant virtuel Telegram pour trouver des petites annonces dans le Zoom Heb
 
 Le système ZoomChat comprend deux composants complémentaires :
 
-1. **Bot Telegram interactif** (Node.js + GCP Cloud Functions)
+1. **Bot Telegram interactif** (Node.js + GCP Cloud Functions + PostgreSQL)
    - Répond aux commandes des utilisateurs (`/start`, `/aide`)
+   - Gestion des abonnements (`/abonner`, `/desabonner`)
+   - Base de données PostgreSQL pour stocker les abonnés
    - Permet de rechercher des annonces (fonctionnalité à venir)
 
 2. **Système de notification automatique** (Google Apps Script)
@@ -21,6 +23,7 @@ Le système ZoomChat comprend deux composants complémentaires :
 - Un compte Telegram et un bot créé via [@BotFather](https://t.me/botfather)
 - Un compte Google Cloud Platform (GCP)
 - Google Cloud CLI (`gcloud`) installé
+- Une base de données PostgreSQL (locale ou cloud)
 
 ### Pour le système de notification automatique
 - Un compte Google (Gmail)
@@ -41,10 +44,21 @@ cd zoomchat
 npm install
 ```
 
-3. Configurer les variables d'environnement :
-   - Créer un bot Telegram via [@BotFather](https://t.me/botfather)
-   - Copier le token du bot
-   - Éditer le fichier `.env` et remplacer `your_bot_token_here` par votre token
+3. Créer un fichier `.env` à la racine du projet :
+```env
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+NODE_ENV=development
+DATABASE_URL=postgresql://user:password@localhost:5432/zoomchat
+```
+
+4. Initialiser la base de données PostgreSQL :
+```bash
+# Créer la base de données
+createdb zoomchat
+
+# Exécuter le schéma
+psql -d zoomchat -f schema.sql
+```
 
 ## 🧪 Développement local
 
@@ -84,7 +98,7 @@ gcloud functions deploy telegramWebhook \
   --allow-unauthenticated \
   --entry-point telegramWebhook \
   --region europe-west1 \
-  --set-env-vars TELEGRAM_BOT_TOKEN=your_bot_token_here
+  --set-env-vars TELEGRAM_BOT_TOKEN=your_bot_token_here,DATABASE_URL=your_postgresql_connection_string
 ```
 
 ### 3. Configurer le webhook
@@ -103,7 +117,7 @@ gcloud functions deploy setWebhook \
   --allow-unauthenticated \
   --entry-point setWebhook \
   --region europe-west1 \
-  --set-env-vars TELEGRAM_BOT_TOKEN=your_bot_token_here,WEBHOOK_URL=https://europe-west1-zoomchat-bot.cloudfunctions.net/telegramWebhook
+  --set-env-vars TELEGRAM_BOT_TOKEN=your_bot_token_here,WEBHOOK_URL=https://europe-west1-zoomchat-bot.cloudfunctions.net/telegramWebhook,DATABASE_URL=your_postgresql_connection_string
 ```
 
 Puis appeler l'URL de setWebhook dans votre navigateur :
@@ -111,11 +125,36 @@ Puis appeler l'URL de setWebhook dans votre navigateur :
 https://europe-west1-zoomchat-bot.cloudfunctions.net/setWebhook
 ```
 
-### Description des fichiers
+## 📁 Structure du projet
 
 **Bot Telegram (Node.js):**
-- `src/bot.js` : Logique du bot, handlers de commandes (`/start`, `/aide`)
-- `src/index.js` : Point d'entrée, gestion webhook/polling
+- `src/bot.js` : Logique du bot, handlers de commandes (`/start`, `/aide`, `/abonner`, `/desabonner`)
+- `src/index.js` : Point d'entrée, gestion webhook/polling, initialisation de la base de données
+- `src/database.js` : Fonctions de gestion de la base de données PostgreSQL
+- `schema.sql` : Schéma de la base de données (table subscribers)
 
 **Notification automatique:**
 - `Code.gs` : Script Google Apps Script qui surveille Gmail et envoie les PDF sur Telegram
+
+## 🔑 Commandes disponibles
+
+Une fois le bot démarré, les utilisateurs peuvent utiliser les commandes suivantes :
+
+- `/start` - Afficher le message de bienvenue et les instructions
+- `/aide` - Obtenir de l'aide et voir des exemples de recherche
+- `/abonner` - S'abonner aux notifications automatiques des nouvelles parutions
+- `/desabonner` - Se désabonner des notifications
+
+## 💾 Base de données
+
+Le bot utilise PostgreSQL pour stocker les informations des abonnés :
+
+- **Table `subscribers`** :
+  - `id` : Identifiant unique auto-incrémenté
+  - `chat_id` : ID du chat Telegram (unique)
+  - `nom` : Nom de l'utilisateur (récupéré depuis Telegram)
+  - `telephone` : Numéro de téléphone (optionnel)
+  - `date_abonnement` : Date et heure de l'abonnement
+  - `actif` : Statut de l'abonnement (true/false)
+
+Les abonnés sont désactivés (soft delete) plutôt que supprimés, permettant de conserver l'historique.

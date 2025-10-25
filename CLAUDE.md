@@ -16,6 +16,7 @@ Built with Node.js and deployed on Google Cloud Platform (GCP) Cloud Functions, 
 ### Telegram Bot
 - **Runtime**: Node.js 18+ (ES Modules)
 - **Bot Framework**: [grammy](https://grammy.dev/) - Modern Telegram bot framework
+- **Database**: PostgreSQL (via pg driver)
 - **Deployment**: GCP Cloud Functions (serverless, webhook-based)
 - **Environment**: dotenv for configuration management
 
@@ -36,13 +37,29 @@ The ZoomChat system uses a dual-component architecture:
 
 1. **src/bot.js** - Bot logic and command handlers
    - `createBot(token)`: Factory function that creates and configures the bot instance
-   - Command handlers: `/start`, `/aide`
+   - Command handlers: `/start`, `/aide`, `/abonner`, `/desabonner`
+   - Subscription management integration
    - Error handling middleware
 
 2. **src/index.js** - Entry point and webhook handler
    - `telegramWebhook`: HTTP function for GCP Cloud Functions (webhook endpoint)
    - `setWebhook`: Helper function to configure Telegram webhook URL
    - `startDevelopment`: Local development mode using polling instead of webhooks
+   - Database initialization on startup
+
+3. **src/database.js** - PostgreSQL database operations
+   - `initDatabase()`: Creates subscribers table if it doesn't exist
+   - `addSubscriber(chatId, nom, telephone)`: Adds or updates a subscriber
+   - `removeSubscriber(chatId)`: Deactivates a subscription
+   - `getSubscriber(chatId)`: Retrieves subscriber information
+   - `getAllActiveSubscribers()`: Returns all active subscribers
+   - `closeDatabase()`: Closes the database connection pool
+   - Uses connection pooling for efficient resource management
+
+4. **schema.sql** - Database schema definition
+   - Defines the `subscribers` table structure
+   - Includes indexes for performance optimization
+   - Contains column documentation
 
 ### Auto-notification System (Code.gs)
 
@@ -111,6 +128,7 @@ Required in `.env` file:
 - `TELEGRAM_BOT_TOKEN`: Bot token from @BotFather
 - `WEBHOOK_URL`: GCP Cloud Function URL (for production)
 - `NODE_ENV`: `development` or `production`
+- `DATABASE_URL`: PostgreSQL connection string (format: `postgresql://user:password@host:port/database`)
 
 ## Development Notes
 
@@ -120,6 +138,15 @@ Required in `.env` file:
 - grammy provides TypeScript-like middleware architecture even in JavaScript
 - The `webhookCallback` adapter handles the conversion between GCP HTTP format and grammy's update format
 - In development, webhook must be deleted (`bot.api.deleteWebhook()`) before starting polling mode
+
+### Database
+- PostgreSQL is used to store subscriber information
+- The database is automatically initialized on startup via `initDatabase()`
+- Uses connection pooling for efficient resource management
+- SSL is enabled in production mode, disabled in development
+- The `subscribers` table stores: chat_id, nom, telephone, date_abonnement, actif
+- Subscribers can be deactivated (soft delete) rather than deleted
+- Uses `ON CONFLICT` clause for upsert operations (update on duplicate chat_id)
 
 ### Auto-notification System
 - Code.gs is deployed to Google Apps Script and linked to a Gmail account
@@ -134,4 +161,6 @@ Required in `.env` file:
 2. New publication email arrives in Gmail inbox
 3. cron-job.org triggers `checkNewEmails()` every 5 minutes
 4. Code.gs extracts PDF and sends to Telegram chat
-5. Users can then interact with the bot to search within publications
+5. Users can subscribe via `/abonner` to receive PDFs automatically
+6. Code.gs queries the database for active subscribers and sends PDFs to all of them
+7. Users can interact with the bot to search within publications (feature in development)

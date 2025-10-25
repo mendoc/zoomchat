@@ -1,9 +1,13 @@
 import 'dotenv/config';
 import { webhookCallback } from 'grammy';
 import { createBot } from './bot.js';
+import { initDatabase } from './database.js';
 
 // Créer l'instance du bot
 const bot = createBot(process.env.TELEGRAM_BOT_TOKEN);
+
+// Initialiser la base de données au démarrage (pour Cloud Functions)
+let dbInitialized = false;
 
 /**
  * Point d'entrée pour Google Cloud Functions
@@ -11,6 +15,12 @@ const bot = createBot(process.env.TELEGRAM_BOT_TOKEN);
  */
 export const telegramWebhook = async (req, res) => {
   try {
+    // Initialiser la base de données une seule fois
+    if (!dbInitialized) {
+      await initDatabase();
+      dbInitialized = true;
+    }
+
     // Créer le callback webhook pour grammy
     const handleUpdate = webhookCallback(bot, 'std-http');
 
@@ -57,6 +67,9 @@ export const setWebhook = async (req, res) => {
 export const startDevelopment = async () => {
   if (process.env.NODE_ENV === 'development') {
     console.log('🚀 Démarrage du bot en mode développement (polling)...');
+
+    // Initialiser la base de données
+    await initDatabase();
 
     // Supprimer le webhook si configuré
     await bot.api.deleteWebhook();

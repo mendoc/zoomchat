@@ -1,4 +1,5 @@
 import { Bot } from 'grammy';
+import { addSubscriber, removeSubscriber, getSubscriber } from './database.js';
 
 /**
  * Crée et configure le bot Telegram
@@ -26,10 +27,14 @@ export function createBot(token) {
 📋 **Commandes disponibles** :
 /start - Afficher ce message
 /aide - Obtenir de l'aide et exemples
+/abonner - S'abonner aux notifications automatiques
+/desabonner - Se désabonner des notifications
 
 💬 **Comment chercher ?**
 Envoyez-moi simplement ce que vous recherchez !
 *Exemples :* "studio à louer Libreville", "Toyota occasion", "cherche ménagère"
+
+📬 **Astuce** : Utilisez /abonner pour recevoir automatiquement le PDF chaque vendredi !
     `.trim();
 
     await ctx.reply(welcomeMessage, { parse_mode: 'Markdown' });
@@ -54,9 +59,85 @@ Envoyez-moi un message décrivant ce que vous cherchez. Je parcourrai les annonc
 🏷️ **Catégories disponibles** :
 🏠 Immobilier - 🚗 Véhicules - 💼 Emploi
 📦 Objets - 🤝 People - 🏪 Commerce
+
+📬 **Abonnement automatique** :
+• /abonner - Recevez le PDF chaque vendredi automatiquement
+• /desabonner - Annulez votre abonnement
     `.trim();
 
     await ctx.reply(helpMessage, { parse_mode: 'Markdown' });
+  });
+
+  // Commande /abonner - S'abonner aux publications automatiques
+  bot.command('abonner', async (ctx) => {
+    try {
+      const chatId = ctx.chat.id;
+
+      // Vérifier si l'utilisateur est déjà abonné
+      const existingSubscriber = await getSubscriber(chatId);
+
+      if (existingSubscriber && existingSubscriber.actif) {
+        await ctx.reply(
+          '✅ Vous êtes déjà abonné aux notifications du Zoom Hebdo !\n\n' +
+          `📅 Date d'abonnement : ${new Date(existingSubscriber.date_abonnement).toLocaleDateString('fr-FR')}\n\n` +
+          'Vous recevrez automatiquement le PDF chaque vendredi.'
+        );
+        return;
+      }
+
+      // Récupérer le nom de l'utilisateur depuis Telegram
+      const nom = `${ctx.from.first_name || ''} ${ctx.from.last_name || ''}`.trim() || 'Utilisateur';
+
+      // Abonner l'utilisateur immédiatement (sans numéro de téléphone)
+      await addSubscriber(chatId, nom, null);
+
+      // Message de confirmation
+      await ctx.reply(
+        '🎉 **Abonnement confirmé !**\n\n' +
+        `👤 Nom : ${nom}\n` +
+        `📅 Date : ${new Date().toLocaleDateString('fr-FR')}\n\n` +
+        '✅ Vous recevrez désormais le PDF du Zoom Hebdo automatiquement chaque vendredi.\n\n' +
+        '💡 Pour vous désabonner, utilisez la commande /desabonner',
+        { parse_mode: 'Markdown' }
+      );
+    } catch (error) {
+      console.error('Erreur commande /abonner:', error);
+      await ctx.reply('❌ Une erreur est survenue. Veuillez réessayer plus tard.');
+    }
+  });
+
+  // Commande /desabonner - Se désabonner des notifications
+  bot.command('desabonner', async (ctx) => {
+    try {
+      const chatId = ctx.chat.id;
+
+      // Vérifier si l'utilisateur est abonné
+      const subscriber = await getSubscriber(chatId);
+
+      if (!subscriber || !subscriber.actif) {
+        await ctx.reply(
+          '❌ Vous n\'êtes pas abonné aux notifications.\n\n' +
+          'Utilisez /abonner pour vous abonner.'
+        );
+        return;
+      }
+
+      // Désactiver l'abonnement
+      const success = await removeSubscriber(chatId);
+
+      if (success) {
+        await ctx.reply(
+          '✅ Désabonnement effectué\n\n' +
+          'Vous ne recevrez plus les notifications automatiques du Zoom Hebdo.\n\n' +
+          '💡 Vous pouvez vous réabonner à tout moment avec la commande /abonner'
+        );
+      } else {
+        await ctx.reply('❌ Une erreur est survenue. Veuillez réessayer.');
+      }
+    } catch (error) {
+      console.error('Erreur commande /desabonner:', error);
+      await ctx.reply('❌ Une erreur est survenue. Veuillez réessayer plus tard.');
+    }
   });
 
   // Gestion des erreurs
