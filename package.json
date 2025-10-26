@@ -25,6 +25,7 @@
   "dependencies": {
     "dotenv": "^16.4.7",
     "grammy": "^1.30.0",
+    "pdfjs-dist": "^5.4.296",
     "pg": "^8.13.1"
   },
   "devDependencies": {

@@ -56,6 +56,9 @@ function checkNewEmails() {
     // 2. Appeler la Cloud Function pour l'envoi en masse
     callMassNotifyFunction(parutionData.numero, parutionData.periode, parutionData.pdfUrl, telegramFileId, caption);
 
+    // 3. Déclencher l'extraction des annonces
+    triggerAnnouncesExtraction();
+
     // Marquer comme lu pour éviter de le retraiter
     msg.markRead();
   });
@@ -198,6 +201,44 @@ function callMassNotifyFunction(numero, periode, pdfUrl, telegramFileId, caption
 
   } catch (error) {
     Logger.log('❌ Erreur lors de l\'appel de la Cloud Function: ' + error.toString());
+    throw error;
+  }
+}
+
+/**
+ * Déclenche l'extraction des annonces depuis le PDF
+ * Appelle l'endpoint /extract de Cloud Run
+ */
+function triggerAnnouncesExtraction() {
+  try {
+    // Configuration - Remplacer par l'URL réelle de Cloud Run
+    const cloudRunUrl = "https://zoomchat-YOUR_SERVICE_ID-europe-west1.run.app/extract";
+
+    // Options de la requête
+    const options = {
+      'method': 'post',
+      'contentType': 'application/json',
+      'muteHttpExceptions': true
+    };
+
+    Logger.log("🔍 Déclenchement de l'extraction des annonces...");
+
+    // Appeler l'endpoint /extract
+    const response = UrlFetchApp.fetch(cloudRunUrl, options);
+    const result = JSON.parse(response.getContentText());
+
+    if (result.success) {
+      Logger.log(`✅ Extraction réussie !`);
+      Logger.log(`📊 Parution N°${result.parution.numero} - ${result.parution.periode}`);
+      Logger.log(`📝 ${result.stats.extraites} annonces extraites, ${result.stats.sauvegardees} sauvegardées`);
+    } else {
+      Logger.log(`❌ Erreur lors de l'extraction: ${result.error}`);
+    }
+
+    return result;
+
+  } catch (error) {
+    Logger.log('❌ Erreur lors de l\'appel de l\'extraction: ' + error.toString());
     throw error;
   }
 }

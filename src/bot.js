@@ -1,5 +1,5 @@
 import { Bot } from 'grammy';
-import { addSubscriber, removeSubscriber, getSubscriber, getAllActiveSubscribers } from './database.js';
+import { addSubscriber, removeSubscriber, getSubscriber, getAllActiveSubscribers, searchAnnonces } from './database.js';
 
 /**
  * Envoie une notification à l'administrateur lors d'une action d'abonnement/désabonnement
@@ -87,17 +87,22 @@ export function createBot(token) {
 • 🤝 Services et rencontres
 • 🏪 Fonds de commerce
 
-📋 *Commandes disponibles* :
-/start - Afficher ce message
-/aide - Obtenir de l'aide et exemples
-/abonner - S'abonner aux notifications automatiques
-/desabonner - Se désabonner des notifications
+💬 *Comment ça marche ?*
+Envoyez-moi simplement votre recherche en message et je parcourrai toutes les annonces pour vous !
 
-💬 *Comment chercher ?*
-Envoyez-moi simplement ce que vous recherchez !
-*Exemples :* "studio à louer Libreville", "Toyota occasion", "cherche ménagère"
+*Exemples de recherches :*
+• "studio à louer Libreville"
+• "Toyota occasion"
+• "cherche ménagère"
+• "terrain à vendre Ntoum"
+• "emploi chauffeur"
 
-📬 *Astuce* : Utilisez /abonner pour recevoir automatiquement le PDF chaque vendredi !
+📋 *Commandes utiles* :
+/aide - Voir plus d'exemples
+/abonner - Recevoir le PDF chaque vendredi
+/desabonner - Annuler l'abonnement
+
+✨ Essayez maintenant ! Tapez ce que vous cherchez...
     `.trim();
 
     // Vérifier si l'utilisateur est abonné
@@ -334,6 +339,86 @@ Envoyez-moi un message décrivant ce que vous cherchez. Je parcourrai les annonc
       }, error.message);
 
       await ctx.reply('❌ Une erreur est survenue. Veuillez réessayer plus tard.');
+    }
+  });
+
+  // Handler pour les messages texte - Recherche d'annonces
+  bot.on('message:text', async (ctx) => {
+    try {
+      const query = ctx.message.text;
+
+      // Ignorer les commandes (déjà gérées par les handlers de commande)
+      if (query.startsWith('/')) {
+        return;
+      }
+
+      // Limiter la taille du message pour éviter les abus
+      if (query.length > 200) {
+        await ctx.reply(
+          '⚠️ Votre recherche est trop longue.\n\n' +
+          'Veuillez limiter votre recherche à 200 caractères maximum.'
+        );
+        return;
+      }
+
+      // Afficher un indicateur de saisie
+      await ctx.replyWithChatAction('typing');
+
+      console.log(`🔍 Recherche pour "${query}"`);
+
+      // Effectuer la recherche (limité à 10 résultats)
+      const resultats = await searchAnnonces(query, 10);
+
+      if (resultats.length === 0) {
+        await ctx.reply(
+          '😔 *Aucune annonce trouvée*\n\n' +
+          `Je n'ai pas trouvé d'annonces correspondant à "${query}".\n\n` +
+          '💡 *Conseils* :\n' +
+          '• Essayez avec des mots-clés plus simples\n' +
+          '• Vérifiez l\'orthographe\n' +
+          '• Utilisez des termes génériques (ex: "studio" au lieu de "studio meublé avec piscine")',
+          { parse_mode: 'Markdown' }
+        );
+        return;
+      }
+
+      // Formater les résultats
+      let response = `🔍 *${resultats.length} annonce${resultats.length > 1 ? 's' : ''} trouvée${resultats.length > 1 ? 's' : ''}*\n`;
+      response += `📝 Recherche : "${query}"\n\n`;
+      response += '─────────────────────\n\n';
+
+      resultats.forEach((annonce, index) => {
+        // Tronquer le texte si trop long
+        const texte = annonce.texte_complet.length > 200
+          ? annonce.texte_complet.substring(0, 200) + '...'
+          : annonce.texte_complet;
+
+        response += `${index + 1}. ${annonce.categorie ? `*[${annonce.categorie}]*` : ''}\n`;
+        response += `${texte}\n`;
+
+        if (annonce.telephone) {
+          response += `📞 ${annonce.telephone}\n`;
+        }
+        if (annonce.prix) {
+          response += `💰 ${annonce.prix}\n`;
+        }
+
+        response += '\n';
+      });
+
+      // Si plus de résultats disponibles
+      if (resultats.length === 10) {
+        response += '💡 _Seuls les 10 premiers résultats sont affichés. Affinez votre recherche pour des résultats plus précis._';
+      }
+
+      await ctx.reply(response, { parse_mode: 'Markdown' });
+
+    } catch (error) {
+      console.error('Erreur recherche annonces:', error);
+      await ctx.reply(
+        '❌ Une erreur est survenue lors de la recherche.\n\n' +
+        'Veuillez réessayer dans quelques instants.'
+      );
     }
   });
 

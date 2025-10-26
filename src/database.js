@@ -95,6 +95,29 @@ export async function initDatabase() {
     `);
 
     console.log('✅ Table envois initialisée');
+
+    // Table annonces
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS annonces (
+        id SERIAL PRIMARY KEY,
+        parution_id INTEGER REFERENCES parutions(id) ON DELETE CASCADE,
+        categorie TEXT,
+        texte_complet TEXT,
+        telephone TEXT,
+        prix TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Index pour la table annonces
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_annonces_parution ON annonces(parution_id)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_annonces_categorie ON annonces(categorie)
+    `);
+
+    console.log('✅ Table annonces initialisée');
     console.log('✅ Base de données initialisée avec succès');
   } catch (error) {
     console.error('❌ Erreur lors de l\'initialisation de la base de données:', error);
@@ -312,6 +335,80 @@ export async function getEnvoisByParution(parutionId) {
     };
   } catch (error) {
     console.error('❌ Erreur lors de la récupération des statistiques:', error);
+    throw error;
+  }
+}
+
+/**
+ * Récupère la dernière parution enregistrée
+ * @returns {Promise<object|null>} La dernière parution ou null
+ */
+export async function getLatestParution() {
+  const client = getPool();
+
+  try {
+    const result = await client.query(
+      `SELECT * FROM parutions ORDER BY created_at DESC LIMIT 1`
+    );
+
+    return result.rows.length > 0 ? result.rows[0] : null;
+  } catch (error) {
+    console.error('❌ Erreur lors de la récupération de la dernière parution:', error);
+    throw error;
+  }
+}
+
+/**
+ * Sauvegarde une annonce dans la base de données
+ * @param {object} data - Les données de l'annonce
+ * @param {number} data.parutionId - ID de la parution
+ * @param {string} data.categorie - Catégorie de l'annonce
+ * @param {string} data.texteComplet - Texte complet de l'annonce
+ * @param {string} data.telephone - Numéro de téléphone (optionnel)
+ * @param {string} data.prix - Prix (optionnel)
+ * @returns {Promise<object>} L'annonce créée
+ */
+export async function saveAnnonce(data) {
+  const client = getPool();
+
+  try {
+    const result = await client.query(
+      `INSERT INTO annonces (parution_id, categorie, texte_complet, telephone, prix)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [data.parutionId, data.categorie, data.texteComplet, data.telephone, data.prix]
+    );
+
+    console.log(`✅ Annonce ajoutée: ${data.categorie}`);
+    return result.rows[0];
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'ajout de l\'annonce:', error);
+    throw error;
+  }
+}
+
+/**
+ * Recherche des annonces par mots-clés
+ * @param {string} query - Requête de recherche
+ * @param {number} limit - Nombre maximum de résultats (défaut: 10)
+ * @returns {Promise<Array>} Liste des annonces trouvées
+ */
+export async function searchAnnonces(query, limit = 10) {
+  const client = getPool();
+
+  try {
+    const result = await client.query(
+      `SELECT * FROM annonces
+       WHERE texte_complet ILIKE $1
+       ORDER BY created_at DESC
+       LIMIT $2`,
+      [`%${query}%`, limit]
+    );
+
+    console.log(`🔍 ${result.rows.length} annonces trouvées pour: "${query}"`);
+    return result.rows;
+  } catch (error) {
+    console.error('❌ Erreur lors de la recherche d\'annonces:', error);
     throw error;
   }
 }

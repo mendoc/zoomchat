@@ -1,0 +1,25 @@
+{
+  "date": 1761460590,
+  "from": {
+    "is_bot": true,
+    "first_name": "Clara",
+    "id": 2057473326,
+    "username": "OngouaBot"
+  },
+  "document": {
+    "mime_type": "application/pdf",
+    "file_name": "ZOOM HEBDO 1545_599.pdf",
+    "file_unique_id": "AgADsx0AAlhm8VM",
+    "file_size": 5939056,
+    "file_id": "BQACAgQAAxkDAAJOvGj9vliK0S59p6aM1piMnZJmIlNnAAKzHQACWGbxU2uEFrNlamfiNgQ"
+  },
+  "caption": "Zoom Hebdo 1545 du 24/10/2025 au 30/10/2025",
+  "message_id": 20157,
+  "chat": {
+    "username": "dimitriongoua",
+    "first_name": "Dimitri",
+    "last_name": "ONGOUA",
+    "id": 1909919492,
+    "type": "private"
+  }
+}
