@@ -38,6 +38,8 @@ The ZoomChat system uses a dual-component architecture:
 1. **src/bot.js** - Bot logic and command handlers
    - `createBot(token)`: Factory function that creates and configures the bot instance
    - Command handlers: `/start`, `/aide`, `/abonner`, `/desabonner`
+   - Inline keyboard button "S'abonner" displayed conditionally (only for non-subscribers)
+   - Callback query handler for `subscribe` action
    - Subscription management integration
    - Error handling middleware
 
@@ -138,6 +140,9 @@ Required in `.env` file:
 - grammy provides TypeScript-like middleware architecture even in JavaScript
 - The `webhookCallback` adapter handles the conversion between GCP HTTP format and grammy's update format
 - In development, webhook must be deleted (`bot.api.deleteWebhook()`) before starting polling mode
+- Inline keyboards are used for interactive buttons (e.g., "S'abonner" button)
+- Subscription button is shown conditionally: visible only for non-subscribed users in `/start` and `/aide` commands
+- Callback queries handle button interactions without requiring users to type commands
 
 ### Database
 - PostgreSQL is used to store subscriber information

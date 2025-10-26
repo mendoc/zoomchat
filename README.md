@@ -128,7 +128,7 @@ https://europe-west1-zoomchat-bot.cloudfunctions.net/setWebhook
 ## 📁 Structure du projet
 
 **Bot Telegram (Node.js):**
-- `src/bot.js` : Logique du bot, handlers de commandes (`/start`, `/aide`, `/abonner`, `/desabonner`)
+- `src/bot.js` : Logique du bot, handlers de commandes (`/start`, `/aide`, `/abonner`, `/desabonner`), boutons inline, callback queries
 - `src/index.js` : Point d'entrée, gestion webhook/polling, initialisation de la base de données
 - `src/database.js` : Fonctions de gestion de la base de données PostgreSQL
 - `schema.sql` : Schéma de la base de données (table subscribers)
@@ -144,6 +144,8 @@ Une fois le bot démarré, les utilisateurs peuvent utiliser les commandes suiva
 - `/aide` - Obtenir de l'aide et voir des exemples de recherche
 - `/abonner` - S'abonner aux notifications automatiques des nouvelles parutions
 - `/desabonner` - Se désabonner des notifications
+
+**Note** : Les utilisateurs non abonnés verront un bouton "📬 S'abonner" dans les réponses aux commandes `/start` et `/aide`, permettant de s'abonner en un clic sans taper la commande `/abonner`.
 
 ## 💾 Base de données
 
