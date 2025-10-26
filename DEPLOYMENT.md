@@ -12,7 +12,68 @@ Ce document explique comment déployer ZoomChat sur Google Cloud Platform (GCP) 
 
 ---
 
-## 🚀 Déploiement automatique (Recommandé)
+## 🚀 Déploiement manuel (Recommandé)
+
+### Déploiement rapide avec npm run deploy
+
+#### 1. Préparer le fichier .env.prod
+
+Copier le template et remplir avec vos valeurs :
+
+```bash
+cp .env.prod.example .env.prod
+```
+
+Éditer `.env.prod` avec vos vraies valeurs de production :
+
+```env
+TELEGRAM_BOT_TOKEN=your_production_bot_token
+DATABASE_URL=postgresql://user:password@host:port/database
+MASS_NOTIFY_SECRET=your_secret_key
+WEBHOOK_URL=https://zoomchat-bot-229693731687.europe-west1.run.app/webhook
+ADMIN_CHAT_ID=1909919492
+NODE_ENV=production
+```
+
+**⚠️ IMPORTANT** : `.env.prod` contient des secrets et ne doit JAMAIS être commité. Il est déjà dans `.gitignore`.
+
+#### 2. Déployer sur GCP
+
+Une seule commande pour déployer :
+
+```bash
+npm run deploy
+```
+
+Ce script va automatiquement :
+- ✅ Vérifier que `.env.prod` existe
+- ✅ Charger les variables d'environnement
+- ✅ Déployer sur Cloud Run (`zoomchat-bot`)
+- ✅ Afficher l'URL du service
+- ✅ Proposer de configurer le webhook Telegram
+
+#### 3. Workflow de déploiement complet
+
+```bash
+# 1. Développer localement
+git add .
+git commit -m "feat: nouvelle fonctionnalité"
+
+# 2. Créer une version (optionnel)
+npm run release
+
+# 3. Pousser vers GitHub
+git push origin main
+
+# 4. Déployer manuellement
+npm run deploy
+```
+
+**Suivi du déploiement** : [Cloud Run Console](https://console.cloud.google.com/run/detail/europe-west1/zoomchat-bot/metrics?project=zoomchat-476308)
+
+---
+
+## ⚙️ Déploiement automatique avec Cloud Build (Optionnel)
 
 ### Configuration du déploiement automatique avec Cloud Build
 

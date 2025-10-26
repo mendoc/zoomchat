@@ -69,6 +69,10 @@ web_modules/
 .env
 .env.*
 !.env.example
+!.env.prod.example
+
+# Production environment file (contains secrets)
+.env.prod
 
 # GCP environment variables (contains secrets)
 env.yaml
