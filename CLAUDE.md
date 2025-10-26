@@ -105,6 +105,15 @@ npm run dev          # Start bot locally (polling mode)
 npm start            # Start bot (checks NODE_ENV)
 ```
 
+### Versioning & Releases
+```bash
+npm run release         # Auto-detect version bump based on conventional commits
+npm run release:major   # Force MAJOR version bump (1.0.0 → 2.0.0)
+npm run release:minor   # Force MINOR version bump (1.0.0 → 1.1.0)
+npm run release:patch   # Force PATCH version bump (1.0.0 → 1.0.1)
+npm run release:first   # First release (doesn't bump version)
+```
+
 ### Deployment
 ```bash
 # Deploy webhook handler
@@ -173,3 +182,19 @@ Required in `.env` file:
 5. Users can subscribe via `/abonner` to receive PDFs automatically
 6. Code.gs queries the database for active subscribers and sends PDFs to all of them
 7. Users can interact with the bot to search within publications (feature in development)
+
+### Version Management
+- **Conventional Commits**: The project uses [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages
+- **Semantic Versioning**: Follows [semver](https://semver.org/) (MAJOR.MINOR.PATCH)
+- **Automated Versioning**: `standard-version` automatically:
+  - Analyzes commit messages to determine version bump type
+  - Updates `package.json` version
+  - Generates/updates `CHANGELOG.md`
+  - Creates a release commit
+- **Commit Types**:
+  - `feat:` → MINOR bump (new feature)
+  - `fix:` → PATCH bump (bug fix)
+  - `BREAKING CHANGE:` or `!` → MAJOR bump (breaking change)
+  - Other types (`docs:`, `refactor:`, etc.) → no version bump
+- **Configuration**: `.versionrc.json` contains standard-version configuration
+- **Workflow**: See `CONTRIBUTING.md` for detailed contribution guidelines

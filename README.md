@@ -176,3 +176,41 @@ Les notifications incluent :
 - Date et heure de l'action
 - Nombre total d'abonnés actifs
 - Message d'erreur en cas d'échec
+
+## 🔄 Versionnement et releases
+
+Ce projet utilise le [versionnement sémantique (semver)](https://semver.org/lang/fr/) et les [commits conventionnels](https://www.conventionalcommits.org/fr/) pour gérer automatiquement les versions.
+
+### Format des commits
+
+```bash
+# Nouvelle fonctionnalité (incrémente MINOR: 1.0.0 → 1.1.0)
+git commit -m "feat: ajout de la commande /dernier"
+
+# Correction de bug (incrémente PATCH: 1.0.0 → 1.0.1)
+git commit -m "fix: correction de l'erreur d'abonnement"
+
+# Breaking change (incrémente MAJOR: 1.0.0 → 2.0.0)
+git commit -m "feat!: migration vers PostgreSQL
+
+BREAKING CHANGE: SQLite n'est plus supporté"
+```
+
+### Créer une nouvelle version
+
+```bash
+# Détection automatique du type de version
+npm run release
+
+# Ou forcer un type spécifique
+npm run release:major   # 1.0.0 → 2.0.0
+npm run release:minor   # 1.0.0 → 1.1.0
+npm run release:patch   # 1.0.0 → 1.0.1
+```
+
+Cela mettra automatiquement à jour :
+- La version dans `package.json`
+- Le fichier `CHANGELOG.md`
+- Créera un commit de release
+
+Pour plus de détails, consultez [CONTRIBUTING.md](CONTRIBUTING.md).
