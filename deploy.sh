@@ -20,10 +20,14 @@ PROJECT_ID="zoomchat-476308"
 SERVICE_NAME="zoomchat-bot"
 REGION="europe-west1"
 
+# Récupérer la version depuis package.json
+VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\(.*\)".*/\1/' | tr '.' '-')
+
 echo "📦 Configuration:"
 echo "   Projet GCP: $PROJECT_ID"
 echo "   Service: $SERVICE_NAME"
 echo "   Région: $REGION"
+echo "   Version: $VERSION"
 echo ""
 
 # Charger les variables d'environnement depuis .env.prod
@@ -41,7 +45,7 @@ echo "✅ Variables chargées"
 echo ""
 
 # Déployer sur Cloud Run
-echo "☁️  Déploiement sur Cloud Run..."
+echo "☁️  Déploiement sur Cloud Run avec révision v$VERSION..."
 gcloud run deploy $SERVICE_NAME \
   --source . \
   --platform managed \
@@ -49,8 +53,9 @@ gcloud run deploy $SERVICE_NAME \
   --allow-unauthenticated \
   --set-env-vars "$ENV_VARS" \
   --project $PROJECT_ID \
+  --revision-suffix "v$VERSION" \
   --min-instances 0 \
-  --max-instances 10 \
+  --max-instances 5 \
   --memory 512Mi \
   --cpu 1 \
   --timeout 300
