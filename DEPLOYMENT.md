@@ -1,11 +1,81 @@
-# Guide de déploiement sur GCP Cloud Run
+# Guide de déploiement - ZoomChat
 
-## Prérequis
+Ce document explique comment déployer ZoomChat sur Google Cloud Platform (GCP) avec déploiement automatique via Cloud Build.
+
+## 📋 Prérequis
 
 1. **Google Cloud SDK** installé : https://cloud.google.com/sdk/docs/install
-2. **Docker** installé : https://docs.docker.com/get-docker/
-3. **Compte GCP** avec facturation activée
-4. **PostgreSQL** accessible depuis internet (ou Cloud SQL)
+2. **Compte GCP** avec facturation activée : `zoomchat-476308`
+3. **PostgreSQL** accessible depuis internet
+4. **Dépôt GitHub** connecté à Cloud Build
+5. **Variables d'environnement** configurées dans `env.yaml`
+
+---
+
+## 🚀 Déploiement automatique (Recommandé)
+
+### Configuration du déploiement automatique avec Cloud Build
+
+#### 1. Préparer le fichier env.yaml
+
+Copier le template et remplir avec vos valeurs :
+
+```bash
+cp env.yaml.example env.yaml
+```
+
+Éditer `env.yaml` avec vos vraies valeurs (déjà présent dans le projet) :
+
+```yaml
+TELEGRAM_BOT_TOKEN: your_bot_token_from_botfather
+DATABASE_URL: postgresql://user:password@host:port/database
+MASS_NOTIFY_SECRET: your_secret_key
+WEBHOOK_URL: https://zoomchat-bot-229693731687.europe-west1.run.app/webhook
+ADMIN_CHAT_ID: "1909919492"
+NODE_ENV: production
+```
+
+**⚠️ IMPORTANT** : `env.yaml` contient des secrets et ne doit JAMAIS être commité. Il est déjà dans `.gitignore`.
+
+#### 2. Créer le déclencheur Cloud Build
+
+1. Aller sur [Google Cloud Build Triggers](https://console.cloud.google.com/cloud-build/triggers?project=zoomchat-476308)
+
+2. Cliquer sur **"Créer un déclencheur"**
+
+3. Configurer le déclencheur :
+   - **Nom** : `deploy-on-push-main`
+   - **Événement** : Push vers une branche
+   - **Source** : Dépôt GitHub `mendoc/zoomchat`
+   - **Branche** : `^main$`
+   - **Configuration** : Cloud Build configuration file (yaml or json)
+   - **Emplacement** : `/cloudbuild.yaml`
+
+4. Cliquer sur **"Créer"**
+
+#### 3. Workflow automatique
+
+Une fois configuré, chaque push sur `main` déclenche automatiquement le déploiement :
+
+```bash
+# Développement local
+git add .
+git commit -m "feat: nouvelle fonctionnalité"
+
+# Créer une version (recommandé)
+npm run release
+
+# Pousser vers GitHub → déploiement automatique !
+git push origin main
+```
+
+Cloud Build :
+- ✅ Détecte le push sur `main`
+- ✅ Exécute `cloudbuild.yaml`
+- ✅ Déploie sur Cloud Run (`zoomchat-bot`)
+- ✅ Configure les variables d'environnement depuis `env.yaml`
+
+**Suivi du déploiement** : [Cloud Build History](https://console.cloud.google.com/cloud-build/builds?project=zoomchat-476308)
 
 ---
 

@@ -79,15 +79,31 @@ Permettre aux utilisateurs de définir des critères de recherche et recevoir de
 
 ## 🛠️ Infrastructure & DevOps
 
-### CI/CD et gestion des versions
-- **Pipeline de déploiement** : Automatiser le déploiement avec suivi des versions dans `package.json`
-- **Versionnage sémantique** : Utiliser les commits conventionnels pour générer automatiquement les versions (semver)
-- **Déploiement continu** : Configurer un workflow GitHub Actions pour déployer automatiquement après chaque push sur la branche `main`
+### ✅ Réalisé
 
-**Technologies** :
-- GitHub Actions pour le CI/CD
-- Semantic Release pour la gestion automatique des versions
-- Tests automatisés avant déploiement
+- **✅ Versionnage sémantique** : Système complet basé sur les commits conventionnels avec `standard-version`
+  - Détection automatique du type de version (MAJOR, MINOR, PATCH)
+  - Génération automatique de CHANGELOG.md
+  - Scripts npm pour les releases
+  - Documentation complète dans CONTRIBUTING.md
+
+- **✅ Déploiement automatique** : Google Cloud Build configuré
+  - Déclenchement automatique sur push `main`
+  - Fichier `cloudbuild.yaml` pour la configuration
+  - Variables d'environnement gérées via `env.yaml`
+  - Déploiement sur Cloud Run (région: europe-west1)
+
+### 🚧 À venir
+
+- **Tests automatisés** : Ajouter des tests unitaires et d'intégration
+  - Tests avec Jest ou Mocha
+  - Exécution avant chaque déploiement
+  - Coverage minimum requis
+
+- **Monitoring et alertes** : Surveillance de la production
+  - Métriques Cloud Run
+  - Alertes sur erreurs
+  - Dashboard de monitoring
 
 ---
 
@@ -120,7 +136,8 @@ zoomchat/
 ## 📊 Métriques et suivi
 
 Pour suivre l'avancement du projet :
-- **5 fonctionnalités réalisées** sur 9 planifiées (56%)
+- **7 fonctionnalités réalisées** sur 9 planifiées (78%)
+- **Infrastructure** : Versionnement et CI/CD ✅
 - **Focus actuel** : Extraction et recherche d'annonces
 - **Prochaine release** : v2.0.0 avec la recherche en langage naturel
 

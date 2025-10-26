@@ -1,0 +1,33 @@
+# Configuration Google Cloud Build pour déploiement automatique
+# Déclencheur : Push sur la branche main
+
+steps:
+  # Étape 1 : Déployer sur Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'zoomchat-bot'
+      - '--source=.'
+      - '--region=europe-west1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--env-vars-file=env.yaml'
+      - '--service-account=zoomchat-sa@zoomchat-476308.iam.gserviceaccount.com'
+
+# Configuration du timeout (10 minutes max)
+timeout: 600s
+
+# Options de build
+options:
+  # Machine type pour le build
+  machineType: 'E2_HIGHCPU_8'
+
+  # Logging
+  logging: CLOUD_LOGGING_ONLY
+
+# Substitutions pour les variables
+substitutions:
+  _SERVICE_NAME: 'zoomchat-bot'
+  _REGION: 'europe-west1'
