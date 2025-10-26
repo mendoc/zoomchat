@@ -1,6 +1,6 @@
 {
   "name": "zoomchat",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Un assistant virtuel pour trouver des petites annonces dans le Zoom Hebdo",
   "main": "src/index.js",
   "type": "module",
