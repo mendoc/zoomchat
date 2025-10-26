@@ -1,0 +1,41 @@
+# Dépendances
+node_modules
+npm-debug.log
+
+# Fichiers de développement
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Documentation
+README.md
+CLAUDE.md
+*.md
+
+# Fichiers de test
+test.json
+*.test.js
+
+# Fichiers temporaires
+*.log
+*.tmp
+.DS_Store
+
+# Google Apps Script (non nécessaire dans le conteneur)
+Code.gs
+
+# PDF de test
+*.pdf
+
+# Claude Code
+.claude
