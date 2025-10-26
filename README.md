@@ -49,6 +49,7 @@ npm install
 TELEGRAM_BOT_TOKEN=your_bot_token_here
 NODE_ENV=development
 DATABASE_URL=postgresql://user:password@localhost:5432/zoomchat
+ADMIN_CHAT_ID=your_telegram_chat_id  # Optionnel : pour recevoir les notifications d'abonnement
 ```
 
 4. Initialiser la base de données PostgreSQL :
@@ -128,7 +129,7 @@ https://europe-west1-zoomchat-bot.cloudfunctions.net/setWebhook
 ## 📁 Structure du projet
 
 **Bot Telegram (Node.js):**
-- `src/bot.js` : Logique du bot, handlers de commandes (`/start`, `/aide`, `/abonner`, `/desabonner`), boutons inline, callback queries
+- `src/bot.js` : Logique du bot, handlers de commandes (`/start`, `/aide`, `/abonner`, `/desabonner`), boutons inline, callback queries, notifications admin
 - `src/index.js` : Point d'entrée, gestion webhook/polling, initialisation de la base de données
 - `src/database.js` : Fonctions de gestion de la base de données PostgreSQL
 - `schema.sql` : Schéma de la base de données (table subscribers)
@@ -160,3 +161,18 @@ Le bot utilise PostgreSQL pour stocker les informations des abonnés :
   - `actif` : Statut de l'abonnement (true/false)
 
 Les abonnés sont désactivés (soft delete) plutôt que supprimés, permettant de conserver l'historique.
+
+## 🔔 Notifications administrateur
+
+Si la variable d'environnement `ADMIN_CHAT_ID` est configurée, l'administrateur reçoit automatiquement des notifications Telegram pour :
+- Chaque nouvel abonnement (via `/abonner` ou le bouton "S'abonner")
+- Chaque désabonnement (via `/desabonner`)
+- Les erreurs lors des opérations d'abonnement/désabonnement
+
+Les notifications incluent :
+- Nom complet de l'utilisateur
+- Username Telegram (@username)
+- ID du chat Telegram
+- Date et heure de l'action
+- Nombre total d'abonnés actifs
+- Message d'erreur en cas d'échec

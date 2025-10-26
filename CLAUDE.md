@@ -37,10 +37,12 @@ The ZoomChat system uses a dual-component architecture:
 
 1. **src/bot.js** - Bot logic and command handlers
    - `createBot(token)`: Factory function that creates and configures the bot instance
+   - `notifyAdmin(bot, action, userData, error)`: Sends notifications to admin when users subscribe/unsubscribe
    - Command handlers: `/start`, `/aide`, `/abonner`, `/desabonner`
    - Inline keyboard button "S'abonner" displayed conditionally (only for non-subscribers)
    - Callback query handler for `subscribe` action
    - Subscription management integration
+   - Admin notifications for subscription events (success and errors)
    - Error handling middleware
 
 2. **src/index.js** - Entry point and webhook handler
@@ -131,6 +133,7 @@ Required in `.env` file:
 - `WEBHOOK_URL`: GCP Cloud Function URL (for production)
 - `NODE_ENV`: `development` or `production`
 - `DATABASE_URL`: PostgreSQL connection string (format: `postgresql://user:password@host:port/database`)
+- `ADMIN_CHAT_ID`: Telegram chat ID of the admin to receive subscription notifications (optional)
 
 ## Development Notes
 
@@ -143,6 +146,7 @@ Required in `.env` file:
 - Inline keyboards are used for interactive buttons (e.g., "S'abonner" button)
 - Subscription button is shown conditionally: visible only for non-subscribed users in `/start` and `/aide` commands
 - Callback queries handle button interactions without requiring users to type commands
+- Admin notifications: When `ADMIN_CHAT_ID` is configured, the admin receives formatted notifications for all subscription/unsubscription events, including user details (name, username, chat ID), timestamp, and total active subscribers count
 
 ### Database
 - PostgreSQL is used to store subscriber information
