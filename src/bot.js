@@ -12,11 +12,11 @@ export function createBot(token) {
   // Commande /start - Présentation du bot
   bot.command('start', async (ctx) => {
     const welcomeMessage = `
-👋 Bonjour ! Je suis **ZoomChat**, votre assistant virtuel pour les petites annonces du **Zoom Hebdo** 🇬🇦
+👋 Bonjour ! Je suis *ZoomChat*, votre assistant virtuel pour les petites annonces du *Zoom Hebdo* 🇬🇦
 
-📰 **Le Zoom Hebdo**, c'est le journal N°1 d'annonces contrôlées au Gabon, publié chaque vendredi.
+📰 *Le Zoom Hebdo*, c'est le journal N°1 d'annonces contrôlées au Gabon, publié chaque vendredi.
 
-🔍 **Je peux vous aider à trouver** :
+🔍 *Je peux vous aider à trouver* :
 • 🏠 Immobilier (locations, ventes, terrains)
 • 🚗 Véhicules (voitures, utilitaires)
 • 💼 Emplois (offres d'emploi, formations)
@@ -24,17 +24,17 @@ export function createBot(token) {
 • 🤝 Services et rencontres
 • 🏪 Fonds de commerce
 
-📋 **Commandes disponibles** :
+📋 *Commandes disponibles* :
 /start - Afficher ce message
 /aide - Obtenir de l'aide et exemples
 /abonner - S'abonner aux notifications automatiques
 /desabonner - Se désabonner des notifications
 
-💬 **Comment chercher ?**
+💬 *Comment chercher ?*
 Envoyez-moi simplement ce que vous recherchez !
 *Exemples :* "studio à louer Libreville", "Toyota occasion", "cherche ménagère"
 
-📬 **Astuce** : Utilisez /abonner pour recevoir automatiquement le PDF chaque vendredi !
+📬 *Astuce* : Utilisez /abonner pour recevoir automatiquement le PDF chaque vendredi !
     `.trim();
 
     await ctx.reply(welcomeMessage, { parse_mode: 'Markdown' });
@@ -43,24 +43,24 @@ Envoyez-moi simplement ce que vous recherchez !
   // Commande /aide (remplace /help)
   bot.command('aide', async (ctx) => {
     const helpMessage = `
-ℹ️ **Aide - ZoomChat**
+ℹ️ *Aide - ZoomChat*
 
-🔎 **Comment rechercher une annonce ?**
+🔎 *Comment rechercher une annonce ?*
 Envoyez-moi un message décrivant ce que vous cherchez. Je parcourrai les annonces du Zoom Hebdo pour vous.
 
-📝 **Exemples de recherches** :
-• "appartement 3 chambres Owendo"
-• "voiture Toyota moins de 5 millions"
-• "emploi chauffeur permis CD"
-• "cherche nounou logée"
-• "terrain à vendre Ntoum"
-• "salon de coiffure à céder"
+📝 *Exemples de recherches* :
+• appartement 3 chambres Owendo
+• voiture Toyota moins de 5 millions
+• emploi chauffeur permis CD
+• cherche nounou logée
+• terrain à vendre Ntoum
+• salon de coiffure à céder
 
-🏷️ **Catégories disponibles** :
+🏷️ *Catégories disponibles* :
 🏠 Immobilier - 🚗 Véhicules - 💼 Emploi
 📦 Objets - 🤝 People - 🏪 Commerce
 
-📬 **Abonnement automatique** :
+📬 *Abonnement automatique* :
 • /abonner - Recevez le PDF chaque vendredi automatiquement
 • /desabonner - Annulez votre abonnement
     `.trim();
@@ -93,7 +93,7 @@ Envoyez-moi un message décrivant ce que vous cherchez. Je parcourrai les annonc
 
       // Message de confirmation
       await ctx.reply(
-        '🎉 **Abonnement confirmé !**\n\n' +
+        '🎉 *Abonnement confirmé !*\n\n' +
         `👤 Nom : ${nom}\n` +
         `📅 Date : ${new Date().toLocaleDateString('fr-FR')}\n\n` +
         '✅ Vous recevrez désormais le PDF du Zoom Hebdo automatiquement chaque vendredi.\n\n' +

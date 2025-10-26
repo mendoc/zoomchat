@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { webhookCallback } from 'grammy';
 import { createBot } from './bot.js';
 import { initDatabase } from './database.js';
+import { massNotify as massNotifyHandler } from './massNotify.js';
 
 // Créer l'instance du bot
 const bot = createBot(process.env.TELEGRAM_BOT_TOKEN);
@@ -80,6 +81,12 @@ export const startDevelopment = async () => {
     console.log('✅ Bot démarré avec succès !');
   }
 };
+
+/**
+ * Cloud Function pour l'envoi en masse aux abonnés
+ * Appelée par Google Apps Script après extraction du file_id Telegram
+ */
+export const massNotify = massNotifyHandler;
 
 // Démarrer en mode développement si exécuté directement
 if (process.env.NODE_ENV === 'development') {

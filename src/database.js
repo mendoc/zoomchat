@@ -20,12 +20,13 @@ function getPool() {
 }
 
 /**
- * Initialise la table subscribers si elle n'existe pas
+ * Initialise toutes les tables de la base de données si elles n'existent pas
  */
 export async function initDatabase() {
   const client = getPool();
 
   try {
+    // Table subscribers
     await client.query(`
       CREATE TABLE IF NOT EXISTS subscribers (
         id SERIAL PRIMARY KEY,
@@ -37,7 +38,64 @@ export async function initDatabase() {
       )
     `);
 
+    // Index pour la table subscribers
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_subscribers_chat_id ON subscribers(chat_id)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_subscribers_actif ON subscribers(actif)
+    `);
+
     console.log('✅ Table subscribers initialisée');
+
+    // Table parutions
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS parutions (
+        id SERIAL PRIMARY KEY,
+        numero VARCHAR(10) UNIQUE NOT NULL,
+        periode TEXT NOT NULL,
+        pdf_url TEXT NOT NULL,
+        telegram_file_id TEXT NOT NULL,
+        date_parution DATE,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Index pour la table parutions
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_parutions_numero ON parutions(numero)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_parutions_date ON parutions(date_parution)
+    `);
+
+    console.log('✅ Table parutions initialisée');
+
+    // Table envois
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS envois (
+        id SERIAL PRIMARY KEY,
+        parution_id INTEGER REFERENCES parutions(id) ON DELETE CASCADE,
+        subscriber_id INTEGER REFERENCES subscribers(id) ON DELETE CASCADE,
+        statut VARCHAR(20) NOT NULL CHECK (statut IN ('success', 'failed')),
+        error_message TEXT,
+        sent_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Index pour la table envois
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_envois_parution ON envois(parution_id)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_envois_subscriber ON envois(subscriber_id)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_envois_statut ON envois(statut)
+    `);
+
+    console.log('✅ Table envois initialisée');
+    console.log('✅ Base de données initialisée avec succès');
   } catch (error) {
     console.error('❌ Erreur lors de l\'initialisation de la base de données:', error);
     throw error;
@@ -146,5 +204,114 @@ export async function closeDatabase() {
     await pool.end();
     pool = null;
     console.log('🔌 Connexion à la base de données fermée');
+  }
+}
+
+/**
+ * Ajoute une nouvelle parution à la base de données
+ * @param {object} data - Les données de la parution
+ * @param {string} data.numero - Numéro de la parution
+ * @param {string} data.periode - Période de la parution
+ * @param {string} data.pdfUrl - URL du PDF
+ * @param {string} data.telegramFileId - File ID Telegram
+ * @param {Date} data.dateParution - Date de parution (optionnel)
+ * @returns {Promise<object>} La parution créée
+ */
+export async function addParution(data) {
+  const client = getPool();
+
+  try {
+    const result = await client.query(
+      `INSERT INTO parutions (numero, periode, pdf_url, telegram_file_id, date_parution)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (numero) DO UPDATE
+       SET periode = $2, pdf_url = $3, telegram_file_id = $4, date_parution = $5
+       RETURNING *`,
+      [data.numero, data.periode, data.pdfUrl, data.telegramFileId, data.dateParution || new Date()]
+    );
+
+    console.log(`✅ Parution ajoutée: ${data.numero}`);
+    return result.rows[0];
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'ajout de la parution:', error);
+    throw error;
+  }
+}
+
+/**
+ * Récupère une parution par son numéro
+ * @param {string} numero - Le numéro de la parution
+ * @returns {Promise<object|null>} La parution ou null
+ */
+export async function getParutionByNumero(numero) {
+  const client = getPool();
+
+  try {
+    const result = await client.query(
+      `SELECT * FROM parutions WHERE numero = $1`,
+      [numero]
+    );
+
+    return result.rows.length > 0 ? result.rows[0] : null;
+  } catch (error) {
+    console.error('❌ Erreur lors de la récupération de la parution:', error);
+    throw error;
+  }
+}
+
+/**
+ * Enregistre un envoi dans l'historique
+ * @param {number} parutionId - ID de la parution
+ * @param {number} subscriberId - ID de l'abonné
+ * @param {string} statut - Statut de l'envoi ('success' ou 'failed')
+ * @param {string} errorMessage - Message d'erreur (optionnel)
+ * @returns {Promise<object>} L'envoi enregistré
+ */
+export async function logEnvoi(parutionId, subscriberId, statut, errorMessage = null) {
+  const client = getPool();
+
+  try {
+    const result = await client.query(
+      `INSERT INTO envois (parution_id, subscriber_id, statut, error_message)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [parutionId, subscriberId, statut, errorMessage]
+    );
+
+    return result.rows[0];
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'enregistrement de l\'envoi:', error);
+    throw error;
+  }
+}
+
+/**
+ * Récupère les statistiques d'envoi pour une parution
+ * @param {number} parutionId - ID de la parution
+ * @returns {Promise<object>} Statistiques (total, success, failed)
+ */
+export async function getEnvoisByParution(parutionId) {
+  const client = getPool();
+
+  try {
+    const result = await client.query(
+      `SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN statut = 'success' THEN 1 ELSE 0 END) as success,
+        SUM(CASE WHEN statut = 'failed' THEN 1 ELSE 0 END) as failed
+       FROM envois
+       WHERE parution_id = $1`,
+      [parutionId]
+    );
+
+    const stats = result.rows[0];
+    return {
+      total: parseInt(stats.total) || 0,
+      success: parseInt(stats.success) || 0,
+      failed: parseInt(stats.failed) || 0
+    };
+  } catch (error) {
+    console.error('❌ Erreur lors de la récupération des statistiques:', error);
+    throw error;
   }
 }

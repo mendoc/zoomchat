@@ -20,3 +20,47 @@ COMMENT ON COLUMN subscribers.nom IS 'Nom complet de l''utilisateur (récupéré
 COMMENT ON COLUMN subscribers.telephone IS 'Numéro de téléphone de l''utilisateur';
 COMMENT ON COLUMN subscribers.date_abonnement IS 'Date et heure de l''abonnement';
 COMMENT ON COLUMN subscribers.actif IS 'Indique si l''abonnement est actif (false si désabonné)';
+
+-- Table pour stocker les parutions du Zoom Hebdo
+CREATE TABLE IF NOT EXISTS parutions (
+  id SERIAL PRIMARY KEY,
+  numero VARCHAR(10) UNIQUE NOT NULL,
+  periode TEXT NOT NULL,
+  pdf_url TEXT NOT NULL,
+  telegram_file_id TEXT NOT NULL,
+  date_parution DATE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Index pour améliorer les performances
+CREATE INDEX IF NOT EXISTS idx_parutions_numero ON parutions(numero);
+CREATE INDEX IF NOT EXISTS idx_parutions_date ON parutions(date_parution);
+
+-- Commentaires sur les colonnes
+COMMENT ON COLUMN parutions.numero IS 'Numéro de la parution (ex: 1544)';
+COMMENT ON COLUMN parutions.periode IS 'Période de la parution (ex: "12/01/2025 au 18/01/2025")';
+COMMENT ON COLUMN parutions.pdf_url IS 'URL du PDF sur le site Zoom Hebdo';
+COMMENT ON COLUMN parutions.telegram_file_id IS 'File ID Telegram pour réutilisation rapide';
+COMMENT ON COLUMN parutions.date_parution IS 'Date de publication du magazine';
+
+-- Table pour logger l'historique des envois
+CREATE TABLE IF NOT EXISTS envois (
+  id SERIAL PRIMARY KEY,
+  parution_id INTEGER REFERENCES parutions(id) ON DELETE CASCADE,
+  subscriber_id INTEGER REFERENCES subscribers(id) ON DELETE CASCADE,
+  statut VARCHAR(20) NOT NULL CHECK (statut IN ('success', 'failed')),
+  error_message TEXT,
+  sent_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Index pour améliorer les performances
+CREATE INDEX IF NOT EXISTS idx_envois_parution ON envois(parution_id);
+CREATE INDEX IF NOT EXISTS idx_envois_subscriber ON envois(subscriber_id);
+CREATE INDEX IF NOT EXISTS idx_envois_statut ON envois(statut);
+
+-- Commentaires sur les colonnes
+COMMENT ON COLUMN envois.parution_id IS 'Référence vers la parution envoyée';
+COMMENT ON COLUMN envois.subscriber_id IS 'Référence vers l''abonné destinataire';
+COMMENT ON COLUMN envois.statut IS 'Statut de l''envoi (success ou failed)';
+COMMENT ON COLUMN envois.error_message IS 'Message d''erreur en cas d''échec';
+COMMENT ON COLUMN envois.sent_at IS 'Date et heure de l''envoi';
