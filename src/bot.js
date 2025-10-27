@@ -1,5 +1,5 @@
-import { Bot } from 'grammy';
-import { addSubscriber, removeSubscriber, getSubscriber, getAllActiveSubscribers, searchAnnonces } from './database.js';
+import { Bot, InputFile } from 'grammy';
+import { addSubscriber, removeSubscriber, getSubscriber, getAllActiveSubscribers, searchAnnonces, getLatestParution } from './database.js';
 
 /**
  * Envoie une notification à l'administrateur lors d'une action d'abonnement/désabonnement
@@ -99,6 +99,7 @@ Envoyez-moi simplement votre recherche en message et je parcourrai toutes les an
 
 📋 *Commandes utiles* :
 /aide - Voir plus d'exemples
+/dernier - Recevoir le dernier PDF publié
 /abonner - Recevoir le PDF chaque vendredi
 /desabonner - Annuler l'abonnement
 
@@ -124,6 +125,64 @@ Envoyez-moi simplement votre recherche en message et je parcourrai toutes les an
     });
   });
 
+  // Commande /test
+  bot.command('test', async (ctx) => {
+    const msg = '🚀 Lancement du test d\'extraction des annonces...';
+    await ctx.reply(msg);
+  });
+
+  // Commande /dernier - Envoie le dernier PDF publié
+  bot.command('dernier', async (ctx) => {
+    try {
+      await ctx.replyWithChatAction('upload_document');
+
+      // Récupérer la dernière parution
+      const latestParution = await getLatestParution();
+
+      if (!latestParution) {
+        await ctx.reply(
+          '❌ Aucune parution disponible pour le moment.\n\n' +
+          'Les nouvelles parutions seront disponibles chaque vendredi.'
+        );
+        return;
+      }
+
+      // Préparer le message de caption
+      const caption = `📰 *Zoom Hebdo N°${latestParution.numero}*\n` +
+        `📅 ${latestParution.periode}\n\n` +
+        '✅ Voici la dernière parution disponible !';
+
+      // Nom du fichier personnalisé
+      const fileName = `Zoom_Hebdo_${latestParution.numero}.pdf`;
+
+      // Essayer d'abord avec le file_id, puis avec l'URL en fallback
+      try {
+        await ctx.replyWithDocument(latestParution.telegram_file_id, {
+          caption,
+          parse_mode: 'Markdown',
+          filename: fileName
+        });
+        console.log(`✅ PDF envoyé à ${ctx.chat.id} via file_id: Parution ${latestParution.numero}`);
+      } catch (fileIdError) {
+        // Si le file_id ne fonctionne pas, utiliser l'URL avec InputFile
+        console.warn(`⚠️ File ID invalide, utilisation de l'URL: ${fileIdError.message}`);
+        const inputFile = new InputFile(new URL(latestParution.pdf_url), fileName);
+        await ctx.replyWithDocument(inputFile, {
+          caption,
+          parse_mode: 'Markdown'
+        });
+        console.log(`✅ PDF envoyé à ${ctx.chat.id} via URL: Parution ${latestParution.numero}`);
+      }
+
+    } catch (error) {
+      console.error('Erreur commande /dernier:', error);
+      await ctx.reply(
+        '❌ Une erreur est survenue lors de l\'envoi du PDF.\n\n' +
+        'Veuillez réessayer dans quelques instants.'
+      );
+    }
+  });
+
   // Commande /aide (remplace /help)
   bot.command('aide', async (ctx) => {
     const chatId = ctx.chat.id;
@@ -146,7 +205,8 @@ Envoyez-moi un message décrivant ce que vous cherchez. Je parcourrai les annonc
 🏠 Immobilier - 🚗 Véhicules - 💼 Emploi
 📦 Objets - 🤝 People - 🏪 Commerce
 
-📬 *Abonnement automatique* :
+📬 *Commandes disponibles* :
+• /dernier - Recevez le dernier PDF publié
 • /abonner - Recevez le PDF chaque vendredi automatiquement
 • /desabonner - Annulez votre abonnement
     `.trim();
@@ -388,19 +448,37 @@ Envoyez-moi un message décrivant ce que vous cherchez. Je parcourrai les annonc
       response += '─────────────────────\n\n';
 
       resultats.forEach((annonce, index) => {
-        // Tronquer le texte si trop long
-        const texte = annonce.texte_complet.length > 200
-          ? annonce.texte_complet.substring(0, 200) + '...'
-          : annonce.texte_complet;
+        // Construire l'affichage avec les nouveaux champs
+        response += `${index + 1}. ${annonce.category ? `*[${annonce.category}]*` : ''}\n`;
 
-        response += `${index + 1}. ${annonce.categorie ? `*[${annonce.categorie}]*` : ''}\n`;
-        response += `${texte}\n`;
-
-        if (annonce.telephone) {
-          response += `📞 ${annonce.telephone}\n`;
+        // Titre en gras
+        if (annonce.title) {
+          response += `*${annonce.title}*\n`;
         }
-        if (annonce.prix) {
-          response += `💰 ${annonce.prix}\n`;
+
+        // Description (tronquée si trop longue)
+        if (annonce.description && annonce.description.length > 0) {
+          const description = annonce.description.length > 150
+            ? annonce.description.substring(0, 150) + '...'
+            : annonce.description;
+          response += `${description}\n`;
+        }
+
+        // Informations complémentaires
+        if (annonce.subcategory) {
+          response += `🏷️ ${annonce.subcategory}\n`;
+        }
+        if (annonce.location) {
+          response += `📍 ${annonce.location}\n`;
+        }
+        if (annonce.price) {
+          response += `💰 ${annonce.price}\n`;
+        }
+        if (annonce.contact) {
+          response += `📞 ${annonce.contact}\n`;
+        }
+        if (annonce.reference) {
+          response += `🔖 Réf: ${annonce.reference}\n`;
         }
 
         response += '\n';

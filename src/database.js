@@ -100,21 +100,39 @@ export async function initDatabase() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS annonces (
         id SERIAL PRIMARY KEY,
-        parution_id INTEGER REFERENCES parutions(id) ON DELETE CASCADE,
-        categorie TEXT,
-        texte_complet TEXT,
-        telephone TEXT,
-        prix TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
+        category TEXT,
+        subcategory TEXT,
+        title TEXT,
+        description TEXT,
+        contact TEXT,
+        price TEXT,
+        location TEXT,
+        reference TEXT UNIQUE NOT NULL,
+        search_vector TSVECTOR GENERATED ALWAYS AS (
+          to_tsvector('french',
+            coalesce(title, '') || ' ' ||
+            coalesce(description, '') || ' ' ||
+            coalesce(category, '') || ' ' ||
+            coalesce(subcategory, '') || ' ' ||
+            coalesce(location, '')
+          )
+        ) STORED,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
     // Index pour la table annonces
     await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_annonces_parution ON annonces(parution_id)
+      CREATE INDEX IF NOT EXISTS idx_annonces_search_vector ON annonces USING GIN(search_vector)
     `);
     await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_annonces_categorie ON annonces(categorie)
+      CREATE INDEX IF NOT EXISTS idx_annonces_category ON annonces(category)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_annonces_reference ON annonces(reference)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_annonces_location ON annonces(location)
     `);
 
     console.log('✅ Table annonces initialisée');
@@ -361,11 +379,14 @@ export async function getLatestParution() {
 /**
  * Sauvegarde une annonce dans la base de données
  * @param {object} data - Les données de l'annonce
- * @param {number} data.parutionId - ID de la parution
- * @param {string} data.categorie - Catégorie de l'annonce
- * @param {string} data.texteComplet - Texte complet de l'annonce
- * @param {string} data.telephone - Numéro de téléphone (optionnel)
- * @param {string} data.prix - Prix (optionnel)
+ * @param {string} data.category - Catégorie de l'annonce
+ * @param {string} data.subcategory - Sous-catégorie (optionnel)
+ * @param {string} data.title - Titre de l'annonce (optionnel)
+ * @param {string} data.reference - Référence unique (requis)
+ * @param {string} data.description - Description complète
+ * @param {string} data.contact - Informations de contact (optionnel)
+ * @param {string} data.price - Prix (optionnel)
+ * @param {string} data.location - Localisation (optionnel)
  * @returns {Promise<object>} L'annonce créée
  */
 export async function saveAnnonce(data) {
@@ -373,13 +394,33 @@ export async function saveAnnonce(data) {
 
   try {
     const result = await client.query(
-      `INSERT INTO annonces (parution_id, categorie, texte_complet, telephone, prix)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO annonces (
+        category, subcategory, title, reference, description,
+        contact, price, location
+      )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (reference) DO UPDATE SET
+         category = $1,
+         subcategory = $2,
+         title = $3,
+         description = $5,
+         contact = $6,
+         price = $7,
+         location = $8
        RETURNING *`,
-      [data.parutionId, data.categorie, data.texteComplet, data.telephone, data.prix]
+      [
+        data.category,
+        data.subcategory,
+        data.title,
+        data.reference,
+        data.description,
+        data.contact,
+        data.price,
+        data.location
+      ]
     );
 
-    console.log(`✅ Annonce ajoutée: ${data.categorie}`);
+    console.log(`✅ Annonce ajoutée: ${data.category} - ${data.title || 'Sans titre'}`);
     return result.rows[0];
   } catch (error) {
     console.error('❌ Erreur lors de l\'ajout de l\'annonce:', error);
@@ -388,7 +429,7 @@ export async function saveAnnonce(data) {
 }
 
 /**
- * Recherche des annonces par mots-clés
+ * Recherche des annonces par mots-clés avec Full-Text Search
  * @param {string} query - Requête de recherche
  * @param {number} limit - Nombre maximum de résultats (défaut: 10)
  * @returns {Promise<Array>} Liste des annonces trouvées
@@ -398,17 +439,39 @@ export async function searchAnnonces(query, limit = 10) {
 
   try {
     const result = await client.query(
-      `SELECT * FROM annonces
-       WHERE texte_complet ILIKE $1
-       ORDER BY created_at DESC
+      `SELECT *,
+         ts_rank(search_vector, to_tsquery('french', $1)) as rank
+       FROM annonces
+       WHERE search_vector @@ to_tsquery('french', $1)
+       ORDER BY rank DESC, created_at DESC
        LIMIT $2`,
-      [`%${query}%`, limit]
+      [query.split(' ').join(' & '), limit]
     );
 
     console.log(`🔍 ${result.rows.length} annonces trouvées pour: "${query}"`);
     return result.rows;
   } catch (error) {
-    console.error('❌ Erreur lors de la recherche d\'annonces:', error);
-    throw error;
+    // Fallback vers recherche ILIKE si la recherche FTS échoue
+    console.warn('⚠️ Erreur recherche FTS, fallback vers ILIKE:', error.message);
+    try {
+      const result = await client.query(
+        `SELECT * FROM annonces
+         WHERE
+           title ILIKE $1 OR
+           description ILIKE $1 OR
+           category ILIKE $1 OR
+           subcategory ILIKE $1 OR
+           location ILIKE $1 OR
+           reference ILIKE $1
+         ORDER BY created_at DESC
+         LIMIT $2`,
+        [`%${query}%`, limit]
+      );
+      console.log(`🔍 ${result.rows.length} annonces trouvées pour: "${query}" (ILIKE)`);
+      return result.rows;
+    } catch (fallbackError) {
+      console.error('❌ Erreur lors de la recherche d\'annonces:', fallbackError);
+      throw fallbackError;
+    }
   }
 }
