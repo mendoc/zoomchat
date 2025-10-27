@@ -53,11 +53,11 @@ function checkNewEmails() {
 
     Logger.log(`✅ File ID récupéré: ${telegramFileId}`);
 
-    // 2. Appeler la Cloud Function pour l'envoi en masse
-    callMassNotifyFunction(parutionData.numero, parutionData.periode, parutionData.pdfUrl, telegramFileId, caption);
-
-    // 3. Déclencher l'extraction des annonces
+    // 2. Déclencher l'extraction des annonces
     triggerAnnouncesExtraction();
+    
+    // 3. Appeler la Cloud Function pour l'envoi en masse
+    callMassNotifyFunction(parutionData.numero, parutionData.periode, parutionData.pdfUrl, telegramFileId, caption);
 
     // Marquer comme lu pour éviter de le retraiter
     msg.markRead();
@@ -132,7 +132,7 @@ function sendParutionPDF(pdfUrl, botToken, chatId, caption = '', fileName = '') 
 
     // Vérifier le succès
     if (result.ok) {
-      Logger.log('✅ PDF envoyé avec succès au chat de test !');
+      Logger.log('✅ PDF envoyé avec succès à l\'admin !');
 
       // Extraire le file_id du document
       const fileId = result.result.document.file_id;

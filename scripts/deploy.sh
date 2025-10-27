@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 
 # Script de déploiement pour ZoomChat sur GCP Cloud Run
 # Usage: npm run deploy

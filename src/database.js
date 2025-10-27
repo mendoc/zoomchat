@@ -428,7 +428,6 @@ export async function saveAnnonce(data) {
       ]
     );
 
-    console.log(`✅ Annonce ajoutée: ${data.category} - ${data.title || 'Sans titre'} (Parution: ${data.parutionId})`);
     return result.rows[0];
   } catch (error) {
     console.error('❌ Erreur lors de l\'ajout de l\'annonce:', error);

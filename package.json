@@ -7,9 +7,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "deploy": "bash deploy.sh",
-    "extract": "node extractor.js",
-    "search": "node search.js",
+    "deploy": "bash scripts/deploy.sh",
+    "extract": "node scripts/extractor.js",
+    "search": "node scripts/search.js",
     "release": "standard-version",
     "release:major": "standard-version --release-as major",
     "release:minor": "standard-version --release-as minor",
