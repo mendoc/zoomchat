@@ -141,13 +141,14 @@ export async function extractAnnoncesFromPage(pdfBuffer, pageNumber, maxRetries 
  * Dès qu'un worker termine, il prend la page suivante dans la queue
  * @param {Array<{pageNumber: number, pdfBuffer: Buffer}>} pages - Array de pages PDF
  * @param {number} maxConcurrent - Nombre max de workers en parallèle (défaut: 3)
- * @returns {Promise<Array>} Liste de toutes les annonces extraites
+ * @returns {Promise<{annonces: Array, stats: object}>} Annonces extraites avec statistiques détaillées
  */
 export async function extractAllAnnonces(pages, maxConcurrent = 3) {
   console.log(`\n🚀 Démarrage de l'extraction Gemini pour ${pages.length} pages (pool de ${maxConcurrent} workers)...\n`);
 
   const allAnnonces = [];
   const errors = [];
+  const pageDetails = [];
   let pageIndex = 0;
   let activeWorkers = 0;
   let completedPages = 0;
@@ -160,20 +161,45 @@ export async function extractAllAnnonces(pages, maxConcurrent = 3) {
       const { pageNumber, pdfBuffer } = pages[currentIndex];
 
       activeWorkers++;
+      const startTime = Date.now();
       console.log(`🔄 Worker démarre page ${pageNumber} (${activeWorkers} actifs, ${completedPages}/${pages.length} terminées)`);
 
       try {
         const annonces = await extractAnnoncesFromPage(pdfBuffer, pageNumber);
+        const duration = Date.now() - startTime;
 
         if (annonces && annonces.length > 0) {
           allAnnonces.push(...annonces);
           console.log(`✅ Page ${pageNumber}: ${annonces.length} annonces collectées`);
+
+          pageDetails.push({
+            pageNumber,
+            annoncesCount: annonces.length,
+            duration: Math.round(duration / 1000), // en secondes
+            status: 'success'
+          });
         } else {
           console.log(`⏭️ Page ${pageNumber}: Aucune annonce`);
+
+          pageDetails.push({
+            pageNumber,
+            annoncesCount: 0,
+            duration: Math.round(duration / 1000),
+            status: 'success'
+          });
         }
       } catch (error) {
+        const duration = Date.now() - startTime;
         console.error(`❌ Erreur irrémédiable sur la page ${pageNumber}:`, error.message);
+
         errors.push({ pageNumber, error: error.message });
+        pageDetails.push({
+          pageNumber,
+          annoncesCount: 0,
+          duration: Math.round(duration / 1000),
+          status: 'error',
+          error: error.message
+        });
       } finally {
         activeWorkers--;
         completedPages++;
@@ -202,7 +228,18 @@ export async function extractAllAnnonces(pages, maxConcurrent = 3) {
 
   console.log('');
 
-  return allAnnonces;
+  // Retourner à la fois les annonces et les statistiques détaillées
+  return {
+    annonces: allAnnonces,
+    stats: {
+      totalPages: pages.length,
+      pagesSuccess: pages.length - errors.length,
+      pagesErrors: errors.length,
+      totalAnnonces,
+      errors,
+      pageDetails: pageDetails.sort((a, b) => a.pageNumber - b.pageNumber)
+    }
+  };
 }
 
 /**

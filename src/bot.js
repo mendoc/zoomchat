@@ -63,6 +63,100 @@ async function notifyAdmin(bot, action, userData, error = null) {
 }
 
 /**
+ * Envoie un rapport d'extraction à l'administrateur
+ * @param {Bot} bot - Instance du bot Telegram
+ * @param {object} parutionInfo - Informations sur la parution
+ * @param {object} extractionStats - Statistiques d'extraction détaillées
+ * @param {number} durationMs - Durée totale en millisecondes
+ * @param {number} savedCount - Nombre d'annonces sauvegardées
+ * @param {number} saveErrors - Nombre d'erreurs de sauvegarde
+ */
+export async function notifyExtractionAdmin(bot, parutionInfo, extractionStats, durationMs, savedCount, saveErrors) {
+  const adminChatId = process.env.ADMIN_CHAT_ID;
+
+  // Si ADMIN_CHAT_ID n'est pas configuré, ne pas envoyer de notification
+  if (!adminChatId) {
+    console.log('⚠️ ADMIN_CHAT_ID non configuré - notification d\'extraction ignorée');
+    return;
+  }
+
+  try {
+    // Déterminer le statut global
+    const hasErrors = extractionStats.pagesErrors > 0 || saveErrors > 0;
+    const isPartialSuccess = hasErrors && extractionStats.pagesSuccess > 0;
+    const isFullFailure = extractionStats.pagesSuccess === 0;
+
+    // Emoji et texte de statut
+    let statusEmoji, statusText;
+    if (isFullFailure) {
+      statusEmoji = '❌';
+      statusText = 'ÉCHEC COMPLET';
+    } else if (isPartialSuccess) {
+      statusEmoji = '⚠️';
+      statusText = 'SUCCÈS PARTIEL';
+    } else {
+      statusEmoji = '✅';
+      statusText = 'SUCCÈS';
+    }
+
+    // Formater la durée
+    const minutes = Math.floor(durationMs / 60000);
+    const seconds = Math.floor((durationMs % 60000) / 1000);
+    const durationStr = minutes > 0 ? `${minutes}min ${seconds}s` : `${seconds}s`;
+
+    // Construire le message
+    let message = `🎯 *EXTRACTION TERMINÉE* - ${statusEmoji} ${statusText}\n\n`;
+
+    message += `📰 *Parution*\n`;
+    message += `   • N°${parutionInfo.numero} (${parutionInfo.periode})\n`;
+    message += `   • ⏱️ Durée : ${durationStr}\n\n`;
+
+    message += `📊 *Statistiques globales*\n`;
+    message += `   • Pages traitées : ${extractionStats.pagesSuccess}/${extractionStats.totalPages}\n`;
+    message += `   • Annonces extraites : ${extractionStats.totalAnnonces}\n`;
+    message += `   • Annonces sauvegardées : ${savedCount}\n`;
+
+    if (saveErrors > 0) {
+      message += `   • Erreurs sauvegarde : ${saveErrors}\n`;
+    }
+
+    // Détails par page (triés par numéro de page)
+    message += `\n📄 *Détails par page*\n`;
+    for (const page of extractionStats.pageDetails) {
+      if (page.status === 'success') {
+        message += `   • Page ${page.pageNumber} : ${page.annoncesCount} annonces\n`;
+      } else {
+        message += `   • Page ${page.pageNumber} : ❌ Erreur\n`;
+      }
+    }
+
+    // Liste des erreurs si présentes
+    if (extractionStats.errors && extractionStats.errors.length > 0) {
+      message += `\n❌ *Erreurs rencontrées*\n`;
+      for (const err of extractionStats.errors) {
+        const shortError = err.error.length > 50 ? err.error.substring(0, 50) + '...' : err.error;
+        message += `   • Page ${err.pageNumber} : ${shortError}\n`;
+      }
+      message += `\n⚠️ Extraction partielle - Vérifier les logs`;
+    } else if (saveErrors > 0) {
+      message += `\n⚠️ ${saveErrors} erreur(s) lors de la sauvegarde - Vérifier les logs`;
+    } else {
+      message += `\n${statusEmoji} Aucune erreur`;
+    }
+
+    // Envoyer la notification à l'admin
+    await bot.api.sendMessage(adminChatId, message, {
+      parse_mode: 'Markdown'
+    });
+
+    console.log(`✅ Rapport d'extraction envoyé à l'admin`);
+  } catch (notifyError) {
+    // Ne pas bloquer le flux principal si la notification échoue
+    console.error('❌ Erreur lors de l\'envoi du rapport d\'extraction:', notifyError);
+  }
+}
+
+/**
  * Crée et configure le bot Telegram
  * @param {string} token - Le token du bot Telegram
  * @returns {Bot} Instance du bot configurée

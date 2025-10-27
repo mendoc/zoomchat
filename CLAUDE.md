@@ -243,3 +243,4 @@ Required in `.env` file:
   - Other types (`docs:`, `refactor:`, etc.) → no version bump
 - **Configuration**: `.versionrc.json` contains standard-version configuration
 - **Workflow**: See `CONTRIBUTING.md` for detailed contribution guidelines
+- to memorize Ne mentionne jamais claude code dans les messages de commit

@@ -2,7 +2,7 @@ import 'dotenv/config';
 import http from 'http';
 import { URL } from 'url';
 import { webhookCallback } from 'grammy';
-import { createBot } from './bot.js';
+import { createBot, notifyExtractionAdmin } from './bot.js';
 import { initDatabase, searchAnnonces, getLatestParution, saveAnnonce } from './database.js';
 import { downloadAndSplitPDF } from './pdfSplitter.js';
 import { extractAllAnnonces, cleanAnnonce } from './geminiExtractor.js';
@@ -150,11 +150,15 @@ const startProductionServer = async () => {
 
     // Route d'extraction et sauvegarde des annonces (appelée par Apps Script)
     if (req.url === '/extract' && req.method === 'POST') {
+      const startTime = Date.now();
+      let parution = null;
+      let extractionResult = null;
+
       try {
         const body = await readBody(req);
 
         // Récupérer la dernière parution
-        const parution = await getLatestParution();
+        parution = await getLatestParution();
 
         if (!parution) {
           res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -172,11 +176,11 @@ const startProductionServer = async () => {
         console.log(`📄 ${pages.length} pages découpées`);
 
         // 2. Extraire les annonces avec Gemini (avec retry automatique)
-        const annoncesExtraites = await extractAllAnnonces(pages);
-        console.log(`🤖 ${annoncesExtraites.length} annonces extraites brutes`);
+        extractionResult = await extractAllAnnonces(pages);
+        console.log(`🤖 ${extractionResult.annonces.length} annonces extraites brutes`);
 
         // 3. Nettoyer et filtrer les annonces (garder uniquement celles avec une référence)
-        const annoncesCleaned = annoncesExtraites
+        const annoncesCleaned = extractionResult.annonces
           .map(annonce => cleanAnnonce(annonce))
           .filter(annonce => annonce.reference); // Filtrer celles sans référence
 
@@ -184,7 +188,7 @@ const startProductionServer = async () => {
 
         // 4. Sauvegarder toutes les annonces
         let saved = 0;
-        let errors = 0;
+        let saveErrors = 0;
 
         for (const annonce of annoncesCleaned) {
           try {
@@ -202,11 +206,26 @@ const startProductionServer = async () => {
             saved++;
           } catch (error) {
             console.error(`Erreur sauvegarde annonce ${annonce.reference}:`, error.message);
-            errors++;
+            saveErrors++;
           }
         }
 
         console.log(`💾 ${saved} annonces sauvegardées en base de données`);
+
+        const duration = Date.now() - startTime;
+
+        // Envoyer le rapport à l'admin
+        await notifyExtractionAdmin(
+          bot,
+          {
+            numero: parution.numero,
+            periode: parution.periode
+          },
+          extractionResult.stats,
+          duration,
+          saved,
+          saveErrors
+        );
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
@@ -217,14 +236,34 @@ const startProductionServer = async () => {
           },
           stats: {
             pagesTraitees: pages.length,
-            extraitesBrutes: annoncesExtraites.length,
+            extraitesBrutes: extractionResult.annonces.length,
             filtrees: annoncesCleaned.length,
             sauvegardees: saved,
-            erreurs: errors
+            erreurs: saveErrors
           }
         }));
       } catch (error) {
         console.error('Erreur extraction:', error);
+
+        const duration = Date.now() - startTime;
+
+        // Envoyer le rapport d'erreur à l'admin si nous avons les infos
+        if (parution && extractionResult) {
+          await notifyExtractionAdmin(
+            bot,
+            {
+              numero: parution.numero,
+              periode: parution.periode
+            },
+            extractionResult.stats,
+            duration,
+            0,
+            0
+          ).catch(notifyErr => {
+            console.error('Erreur notification admin:', notifyErr);
+          });
+        }
+
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: false,

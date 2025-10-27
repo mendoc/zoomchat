@@ -1,8 +1,8 @@
 import 'dotenv/config';
-import { getLatestParution } from './src/database.js';
-import { downloadAndSplitPDF } from './src/pdfSplitter.js';
-import { extractAllAnnonces, cleanAnnonce } from './src/geminiExtractor.js';
-import { saveAnnonce } from './src/database.js';
+import { getLatestParution } from '../src/database.js';
+import { downloadAndSplitPDF } from '../src/pdfSplitter.js';
+import { extractAllAnnonces, cleanAnnonce } from '../src/geminiExtractor.js';
+import { saveAnnonce } from '../src/database.js';
 
 /**
  * Test du pool de workers continu
@@ -34,13 +34,13 @@ async function testWorkerPool() {
     // 3. Extraire les annonces avec le pool de workers
     console.log('Étape 3: Extraction avec pool de workers continu...');
     const extractionStart = Date.now();
-    const annoncesExtraites = await extractAllAnnonces(pages);
+    const extractionResult = await extractAllAnnonces(pages);
     const extractionTime = ((Date.now() - extractionStart) / 1000).toFixed(1);
-    console.log(`✅ ${annoncesExtraites.length} annonces extraites en ${extractionTime}s\n`);
+    console.log(`✅ ${extractionResult.annonces.length} annonces extraites en ${extractionTime}s\n`);
 
     // 4. Nettoyer et filtrer
     console.log('Étape 4: Nettoyage et filtrage...');
-    const annoncesCleaned = annoncesExtraites
+    const annoncesCleaned = extractionResult.annonces
       .map(annonce => cleanAnnonce(annonce))
       .filter(annonce => annonce.reference);
 
@@ -53,9 +53,11 @@ async function testWorkerPool() {
     console.log(`   - Temps total: ${totalTime}s`);
     console.log(`   - Temps extraction: ${extractionTime}s`);
     console.log(`   - Pages traitées: ${pages.length}`);
-    console.log(`   - Annonces extraites: ${annoncesExtraites.length}`);
+    console.log(`   - Annonces extraites: ${extractionResult.annonces.length}`);
     console.log(`   - Annonces valides: ${annoncesCleaned.length}`);
     console.log(`   - Vitesse moyenne: ${(parseFloat(extractionTime) / pages.length).toFixed(1)}s/page`);
+    console.log(`   - Pages en succès: ${extractionResult.stats.pagesSuccess}/${extractionResult.stats.totalPages}`);
+    console.log(`   - Pages en erreur: ${extractionResult.stats.pagesErrors}`);
 
     console.log('\n✅ Test terminé avec succès !');
 
