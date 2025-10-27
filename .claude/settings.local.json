@@ -13,7 +13,10 @@
       "Bash(git push:*)",
       "Bash(gcloud run services describe:*)",
       "Bash(npm run deploy:*)",
-      "Bash(gcloud run revisions list:*)"
+      "Bash(gcloud run revisions list:*)",
+      "WebSearch",
+      "WebFetch(domain:platform.openai.com)",
+      "Bash(npm test)"
     ],
     "deny": [],
     "ask": []

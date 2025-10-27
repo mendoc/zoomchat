@@ -64,3 +64,47 @@ COMMENT ON COLUMN envois.subscriber_id IS 'Référence vers l''abonné destinata
 COMMENT ON COLUMN envois.statut IS 'Statut de l''envoi (success ou failed)';
 COMMENT ON COLUMN envois.error_message IS 'Message d''erreur en cas d''échec';
 COMMENT ON COLUMN envois.sent_at IS 'Date et heure de l''envoi';
+
+-- Table pour stocker les annonces extraites des parutions
+CREATE TABLE IF NOT EXISTS annonces (
+  id SERIAL PRIMARY KEY,
+  parution_id INTEGER REFERENCES parutions(id) ON DELETE CASCADE,
+  category TEXT,
+  subcategory TEXT,
+  title TEXT,
+  reference TEXT UNIQUE NOT NULL,
+  description TEXT,
+  contact TEXT,
+  price TEXT,
+  location TEXT,
+  search_vector TSVECTOR GENERATED ALWAYS AS (
+    to_tsvector('french',
+      coalesce(title, '') || ' ' ||
+      coalesce(description, '') || ' ' ||
+      coalesce(category, '') || ' ' ||
+      coalesce(subcategory, '') || ' ' ||
+      coalesce(contact, '') || ' ' ||
+      coalesce(location, '')
+    )
+  ) STORED,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index pour améliorer les performances
+CREATE INDEX IF NOT EXISTS idx_annonces_parution_id ON annonces(parution_id);
+CREATE INDEX IF NOT EXISTS idx_annonces_category ON annonces(category);
+CREATE INDEX IF NOT EXISTS idx_annonces_reference ON annonces(reference);
+CREATE INDEX IF NOT EXISTS idx_annonces_location ON annonces(location);
+CREATE INDEX IF NOT EXISTS idx_annonces_search_vector ON annonces USING GIN(search_vector);
+
+-- Commentaires sur les colonnes
+COMMENT ON COLUMN annonces.parution_id IS 'Référence vers la parution d''origine';
+COMMENT ON COLUMN annonces.category IS 'Catégorie principale de l''annonce (Emploi, Véhicule, Immobilier, etc.)';
+COMMENT ON COLUMN annonces.subcategory IS 'Sous-catégorie de l''annonce (ex: SCOLAIRE, HORECA, etc.)';
+COMMENT ON COLUMN annonces.title IS 'Titre principal de l''annonce';
+COMMENT ON COLUMN annonces.reference IS 'Référence unique de l''annonce (ex: GA001 251016 L0005)';
+COMMENT ON COLUMN annonces.description IS 'Description complète de l''annonce';
+COMMENT ON COLUMN annonces.contact IS 'Informations de contact complètes extraites de l''annonce';
+COMMENT ON COLUMN annonces.price IS 'Prix mentionné dans l''annonce';
+COMMENT ON COLUMN annonces.location IS 'Lieu géographique (ville, quartier)';
+COMMENT ON COLUMN annonces.search_vector IS 'Vecteur de recherche full-text pour recherche optimisée';

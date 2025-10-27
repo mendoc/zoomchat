@@ -15,6 +15,11 @@ steps:
       - '--allow-unauthenticated'
       - '--env-vars-file=env.yaml'
       - '--service-account=zoomchat-sa@zoomchat-476308.iam.gserviceaccount.com'
+      - '--timeout=1200'
+      - '--memory=512Mi'
+      - '--cpu=1'
+      - '--min-instances=0'
+      - '--max-instances=5'
 
 # Configuration du timeout (10 minutes max)
 timeout: 600s

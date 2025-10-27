@@ -100,6 +100,7 @@ export async function initDatabase() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS annonces (
         id SERIAL PRIMARY KEY,
+        parution_id INTEGER REFERENCES parutions(id) ON DELETE CASCADE,
         category TEXT,
         subcategory TEXT,
         title TEXT,
@@ -114,6 +115,7 @@ export async function initDatabase() {
             coalesce(description, '') || ' ' ||
             coalesce(category, '') || ' ' ||
             coalesce(subcategory, '') || ' ' ||
+            coalesce(contact, '') || ' ' ||
             coalesce(location, '')
           )
         ) STORED,
@@ -122,6 +124,9 @@ export async function initDatabase() {
     `);
 
     // Index pour la table annonces
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_annonces_parution_id ON annonces(parution_id)
+    `);
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_annonces_search_vector ON annonces USING GIN(search_vector)
     `);
@@ -379,6 +384,7 @@ export async function getLatestParution() {
 /**
  * Sauvegarde une annonce dans la base de données
  * @param {object} data - Les données de l'annonce
+ * @param {number} data.parutionId - ID de la parution (requis)
  * @param {string} data.category - Catégorie de l'annonce
  * @param {string} data.subcategory - Sous-catégorie (optionnel)
  * @param {string} data.title - Titre de l'annonce (optionnel)
@@ -395,20 +401,22 @@ export async function saveAnnonce(data) {
   try {
     const result = await client.query(
       `INSERT INTO annonces (
-        category, subcategory, title, reference, description,
+        parution_id, category, subcategory, title, reference, description,
         contact, price, location
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        ON CONFLICT (reference) DO UPDATE SET
-         category = $1,
-         subcategory = $2,
-         title = $3,
-         description = $5,
-         contact = $6,
-         price = $7,
-         location = $8
+         parution_id = $1,
+         category = $2,
+         subcategory = $3,
+         title = $4,
+         description = $6,
+         contact = $7,
+         price = $8,
+         location = $9
        RETURNING *`,
       [
+        data.parutionId,
         data.category,
         data.subcategory,
         data.title,
@@ -420,7 +428,7 @@ export async function saveAnnonce(data) {
       ]
     );
 
-    console.log(`✅ Annonce ajoutée: ${data.category} - ${data.title || 'Sans titre'}`);
+    console.log(`✅ Annonce ajoutée: ${data.category} - ${data.title || 'Sans titre'} (Parution: ${data.parutionId})`);
     return result.rows[0];
   } catch (error) {
     console.error('❌ Erreur lors de l\'ajout de l\'annonce:', error);
@@ -461,6 +469,7 @@ export async function searchAnnonces(query, limit = 10) {
            description ILIKE $1 OR
            category ILIKE $1 OR
            subcategory ILIKE $1 OR
+           contact ILIKE $1 OR
            location ILIKE $1 OR
            reference ILIKE $1
          ORDER BY created_at DESC
@@ -473,5 +482,27 @@ export async function searchAnnonces(query, limit = 10) {
       console.error('❌ Erreur lors de la recherche d\'annonces:', fallbackError);
       throw fallbackError;
     }
+  }
+}
+
+/**
+ * Récupère toutes les annonces d'une parution spécifique
+ * @param {number} parutionId - ID de la parution
+ * @returns {Promise<Array>} Liste des annonces de la parution
+ */
+export async function getAnnoncesByParution(parutionId) {
+  const client = getPool();
+
+  try {
+    const result = await client.query(
+      `SELECT * FROM annonces WHERE parution_id = $1 ORDER BY created_at DESC`,
+      [parutionId]
+    );
+
+    console.log(`📊 ${result.rows.length} annonces trouvées pour la parution ${parutionId}`);
+    return result.rows;
+  } catch (error) {
+    console.error('❌ Erreur lors de la récupération des annonces par parution:', error);
+    throw error;
   }
 }

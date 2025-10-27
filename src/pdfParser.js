@@ -1,5 +1,6 @@
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+import pdf2img from 'pdf-img-convert';
 import fetch from 'node-fetch';
+import { extractAllAnnonces, cleanAnnonce } from './llmExtractor.js';
 
 /**
  * Télécharge un PDF depuis une URL
@@ -25,111 +26,67 @@ export async function downloadPDF(url) {
 }
 
 /**
- * Extrait le texte brut d'un PDF
+ * Convertit un PDF en array d'images base64
  * @param {ArrayBuffer} pdfBuffer - Buffer du PDF
- * @returns {Promise<string>} Texte extrait
+ * @returns {Promise<Array<string>>} Array d'images base64 (une par page)
  */
-export async function extractText(pdfBuffer) {
+export async function convertPDFToImages(pdfBuffer) {
   try {
-    console.log('📄 Extraction du texte du PDF...');
+    console.log('📸 Conversion du PDF en images...');
 
-    const loadingTask = pdfjsLib.getDocument({
-      data: new Uint8Array(pdfBuffer),
-      useSystemFonts: true
+    // Convertir ArrayBuffer en Buffer Node.js
+    const buffer = Buffer.from(pdfBuffer);
+
+    // Convertir PDF en images PNG base64
+    const images = await pdf2img.convert(buffer, {
+      width: 2000,        // Largeur suffisante pour bonne qualité
+      height: 2828,       // Proportion A4
+      base64: true        // Format base64
     });
 
-    const pdf = await loadingTask.promise;
-    const numPages = pdf.numPages;
-    console.log(`📄 Nombre de pages: ${numPages}`);
+    console.log(`✅ ${images.length} pages converties en images`);
+    return images;
 
-    let fullText = '';
-
-    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item => item.str).join(' ');
-      fullText += pageText + '\n';
-
-      if (pageNum % 5 === 0) {
-        console.log(`📄 Pages traitées: ${pageNum}/${numPages}`);
-      }
-    }
-
-    console.log(`✅ Extraction terminée: ${fullText.length} caractères`);
-    return fullText;
   } catch (error) {
-    console.error('❌ Erreur lors de l\'extraction du texte:', error);
+    console.error('❌ Erreur lors de la conversion du PDF:', error);
     throw error;
   }
 }
 
 /**
- * Parse le texte extrait pour identifier les annonces
- * @param {string} text - Texte extrait du PDF
- * @returns {Array} Liste d'annonces structurées
+ * Parse les annonces via LLM (remplace l'ancien parsing regex)
+ * @param {Array<string>} base64Images - Array d'images base64 du PDF
+ * @returns {Promise<Array>} Liste d'annonces structurées
  */
-export function parseAnnonces(text) {
-  console.log('🔍 Parsing des annonces...');
+export async function parseAnnonces(base64Images) {
+  console.log('🔍 Parsing des annonces via LLM...');
 
-  const annonces = [];
+  // Extraire les annonces via le LLM
+  const annoncesBrutes = await extractAllAnnonces(base64Images);
 
-  // Regex pour détecter les références d'annonces (ex: GA001 251016 L0005)
-  const referencePattern = /\(GA\d{3}\s+\d{6}\s+[A-Z]\d{4}\)/g;
+  // Nettoyer et valider les données
+  const annonces = annoncesBrutes.map(annonce => cleanAnnonce(annonce));
 
-  // Découper le texte par références
-  const parts = text.split(referencePattern);
-  const references = text.match(referencePattern) || [];
-
-  // Regex pour extraire téléphone et prix
-  const telPattern = /(?:Tél\.?\s*[:.]?\s*)?(\d{3}\s*\d{2}\s*\d{2}\s*\d{2})/g;
-  const prixPattern = /(\d+\s*(?:000)?\s*FCFA)/g;
-
-  // Catégories possibles
-  const categories = ['Emploi', 'Véhicule', 'Immobilier', 'Objet', 'People'];
-
-  for (let i = 0; i < references.length; i++) {
-    const texteAnnonce = parts[i + 1] || '';
-
-    if (texteAnnonce.trim().length < 20) continue; // Ignorer les annonces trop courtes
-
-    // Extraire le téléphone
-    const telMatch = texteAnnonce.match(telPattern);
-    const telephone = telMatch ? telMatch[0].replace(/[^\d\s]/g, '').trim() : null;
-
-    // Extraire le prix
-    const prixMatch = texteAnnonce.match(prixPattern);
-    const prix = prixMatch ? prixMatch[0].trim() : null;
-
-    // Deviner la catégorie
-    let categorie = 'Autre';
-    for (const cat of categories) {
-      if (text.indexOf(cat) !== -1 && text.indexOf(cat) < text.indexOf(references[i])) {
-        categorie = cat;
-      }
-    }
-
-    annonces.push({
-      texteComplet: texteAnnonce.trim(),
-      telephone,
-      prix,
-      categorie
-    });
-  }
-
-  console.log(`✅ ${annonces.length} annonces détectées`);
+  console.log(`✅ ${annonces.length} annonces parsées et nettoyées`);
   return annonces;
 }
 
 /**
- * Pipeline complet: télécharge, extrait et parse un PDF
+ * Pipeline complet: télécharge, convertit en images et parse un PDF via LLM
  * @param {string} pdfUrl - URL du PDF
  * @returns {Promise<Array>} Liste d'annonces
  */
 export async function processPDF(pdfUrl) {
   try {
+    // 1. Télécharger le PDF
     const pdfBuffer = await downloadPDF(pdfUrl);
-    const text = await extractText(pdfBuffer);
-    const annonces = parseAnnonces(text);
+
+    // 2. Convertir en images
+    const images = await convertPDFToImages(pdfBuffer);
+
+    // 3. Extraire les annonces via LLM
+    const annonces = await parseAnnonces(images);
+
     return annonces;
   } catch (error) {
     console.error('❌ Erreur lors du traitement du PDF:', error);

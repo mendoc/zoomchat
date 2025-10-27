@@ -17,7 +17,9 @@ Built with Node.js and deployed on Google Cloud Platform (GCP) Cloud Functions, 
 - **Runtime**: Node.js 18+ (ES Modules)
 - **Bot Framework**: [grammy](https://grammy.dev/) - Modern Telegram bot framework
 - **Database**: PostgreSQL (via pg driver)
-- **Deployment**: GCP Cloud Functions (serverless, webhook-based)
+- **LLM Extraction**: Google Gemini 2.5 Flash for intelligent ad extraction
+- **PDF Processing**: pdf-lib for PDF page splitting
+- **Deployment**: GCP Cloud Run (serverless, containerized)
 - **Environment**: dotenv for configuration management
 
 ### Auto-notification System
@@ -52,17 +54,37 @@ The ZoomChat system uses a dual-component architecture:
    - Database initialization on startup
 
 3. **src/database.js** - PostgreSQL database operations
-   - `initDatabase()`: Creates subscribers table if it doesn't exist
+   - `initDatabase()`: Creates all tables (subscribers, parutions, envois, annonces)
    - `addSubscriber(chatId, nom, telephone)`: Adds or updates a subscriber
    - `removeSubscriber(chatId)`: Deactivates a subscription
    - `getSubscriber(chatId)`: Retrieves subscriber information
    - `getAllActiveSubscribers()`: Returns all active subscribers
+   - `addParution(data)`: Saves a new parution
+   - `saveAnnonce(data)`: Saves an extracted ad with all fields
+   - `searchAnnonces(query, limit)`: Searches ads by keywords (title, description, category, location, type, reference)
    - `closeDatabase()`: Closes the database connection pool
    - Uses connection pooling for efficient resource management
 
-4. **schema.sql** - Database schema definition
-   - Defines the `subscribers` table structure
-   - Includes indexes for performance optimization
+4. **src/pdfSplitter.js** - PDF splitting and page extraction
+   - `downloadPDF(url)`: Downloads PDF from URL
+   - `splitPDF(pdfBuffer, pageNumbers)`: Extracts specific pages (1, 3, 5, 6, 7) as individual PDFs
+   - `downloadAndSplitPDF(pdfUrl)`: Complete pipeline (download → split pages)
+   - Uses pdf-lib to manipulate PDF documents
+
+5. **src/geminiExtractor.js** - LLM-powered ad extraction with Gemini
+   - `extractAnnoncesFromPage(pdfBuffer, pageNumber, maxRetries)`: Analyzes one page with Gemini 2.5 Flash
+   - `extractAllAnnonces(pages)`: Processes all pages sequentially with retry logic
+   - `cleanAnnonce(annonce)`: Validates and normalizes extracted data
+   - Uses Google Gemini 2.5 Flash to understand multi-column layouts
+   - **Retry logic**: Automatic retry with exponential backoff (1s, 3s, 10s) when model is overloaded
+   - Extracts structured fields: category, subcategory, title, reference, description, contact, price, location
+   - Only pages 1, 3, 5, 6, 7 are processed (pages containing ads)
+
+6. **schema.sql** - Database schema definition
+   - Defines all tables: `subscribers`, `parutions`, `envois`, `annonces`
+   - `annonces` table includes: parution_id, category, subcategory, title, reference, description, contact, price, location
+   - Uses PostgreSQL full-text search (tsvector) for optimized search
+   - Includes indexes for performance optimization (GIN index on search_vector)
    - Contains column documentation
 
 ### Auto-notification System (Code.gs)
@@ -143,6 +165,7 @@ Required in `.env` file:
 - `NODE_ENV`: `development` or `production`
 - `DATABASE_URL`: PostgreSQL connection string (format: `postgresql://user:password@host:port/database`)
 - `ADMIN_CHAT_ID`: Telegram chat ID of the admin to receive subscription notifications (optional)
+- `GEMINI_API_KEY`: Google Gemini API key for LLM ad extraction (required for PDF processing)
 
 ## Development Notes
 
@@ -158,13 +181,35 @@ Required in `.env` file:
 - Admin notifications: When `ADMIN_CHAT_ID` is configured, the admin receives formatted notifications for all subscription/unsubscription events, including user details (name, username, chat ID), timestamp, and total active subscribers count
 
 ### Database
-- PostgreSQL is used to store subscriber information
+- PostgreSQL is used to store subscriber information and extracted ads
 - The database is automatically initialized on startup via `initDatabase()`
 - Uses connection pooling for efficient resource management
 - SSL is enabled in production mode, disabled in development
-- The `subscribers` table stores: chat_id, nom, telephone, date_abonnement, actif
+- **Tables**:
+  - `subscribers`: chat_id, nom, telephone, date_abonnement, actif
+  - `parutions`: numero, periode, pdf_url, telegram_file_id, date_parution
+  - `annonces`: parution_id, categorie, titre, reference, description, telephone, prix, localisation, type_bien_service, email
+  - `envois`: parution_id, subscriber_id, statut, error_message, sent_at
 - Subscribers can be deactivated (soft delete) rather than deleted
-- Uses `ON CONFLICT` clause for upsert operations (update on duplicate chat_id)
+- Uses `ON CONFLICT` clause for upsert operations
+
+### LLM Ad Extraction with Gemini
+- **Model**: Google Gemini 2.5 Flash for cost-effective, accurate extraction
+- **Process**:
+  1. PDF is split into individual pages (only pages 1, 3, 5, 6, 7 are extracted)
+  2. Each page PDF is sent to Gemini 2.5 Flash with a structured prompt
+  3. LLM analyzes visual layout, handles multi-column formats
+  4. Returns JSON with structured ad data
+  5. Retry logic handles model overload errors automatically
+- **Advantages**:
+  - Direct PDF processing (no image conversion needed)
+  - Automatically filters non-ad pages
+  - Extracts all fields: category, subcategory, title, reference, description, contact, price, location
+  - **Robust error handling**: Exponential backoff retry (1s, 3s, 10s) when model is overloaded
+  - No need for complex regex patterns
+  - More economical than OpenAI (~10x cheaper)
+- **Pages processed**: Only 1, 3, 5, 6, 7 (configurable in `src/pdfSplitter.js`)
+- **Rate limiting**: 500ms pause between page requests to respect API limits
 
 ### Auto-notification System
 - Code.gs is deployed to Google Apps Script and linked to a Gmail account

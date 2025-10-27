@@ -4,7 +4,8 @@ import { URL } from 'url';
 import { webhookCallback } from 'grammy';
 import { createBot } from './bot.js';
 import { initDatabase, searchAnnonces, getLatestParution, saveAnnonce } from './database.js';
-import { processPDF } from './pdfParser.js';
+import { downloadAndSplitPDF } from './pdfSplitter.js';
+import { extractAllAnnonces, cleanAnnonce } from './geminiExtractor.js';
 
 // Créer l'instance du bot
 const bot = createBot(process.env.TELEGRAM_BOT_TOKEN);
@@ -164,29 +165,48 @@ const startProductionServer = async () => {
           return;
         }
 
-        console.log(`📥 Extraction des annonces pour la parution N°${parution.numero}`);
+        console.log(`📥 Extraction des annonces pour la parution N°${parution.numero} (${parution.periode})`);
 
-        // Extraire les annonces du PDF
-        const annonces = await processPDF(parution.pdf_url);
+        // 1. Télécharger et découper le PDF (pages 1, 3, 5, 6, 7)
+        const pages = await downloadAndSplitPDF(parution.pdf_url);
+        console.log(`📄 ${pages.length} pages découpées`);
 
-        console.log(`✅ ${annonces.length} annonces extraites`);
+        // 2. Extraire les annonces avec Gemini (avec retry automatique)
+        const annoncesExtraites = await extractAllAnnonces(pages);
+        console.log(`🤖 ${annoncesExtraites.length} annonces extraites brutes`);
 
-        // Sauvegarder toutes les annonces
+        // 3. Nettoyer et filtrer les annonces (garder uniquement celles avec une référence)
+        const annoncesCleaned = annoncesExtraites
+          .map(annonce => cleanAnnonce(annonce))
+          .filter(annonce => annonce.reference); // Filtrer celles sans référence
+
+        console.log(`✅ ${annoncesCleaned.length} annonces valides (avec référence)`);
+
+        // 4. Sauvegarder toutes les annonces
         let saved = 0;
-        for (const annonce of annonces) {
+        let errors = 0;
+
+        for (const annonce of annoncesCleaned) {
           try {
             await saveAnnonce({
               parutionId: parution.id,
-              categorie: annonce.categorie,
-              texteComplet: annonce.texteComplet,
-              telephone: annonce.telephone,
-              prix: annonce.prix
+              category: annonce.category,
+              subcategory: annonce.subcategory,
+              title: annonce.title,
+              reference: annonce.reference,
+              description: annonce.description,
+              contact: annonce.contact,
+              price: annonce.price,
+              location: annonce.location
             });
             saved++;
           } catch (error) {
-            console.error('Erreur sauvegarde annonce:', error);
+            console.error(`Erreur sauvegarde annonce ${annonce.reference}:`, error.message);
+            errors++;
           }
         }
+
+        console.log(`💾 ${saved} annonces sauvegardées en base de données`);
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
@@ -196,8 +216,11 @@ const startProductionServer = async () => {
             periode: parution.periode
           },
           stats: {
-            extraites: annonces.length,
-            sauvegardees: saved
+            pagesTraitees: pages.length,
+            extraitesBrutes: annoncesExtraites.length,
+            filtrees: annoncesCleaned.length,
+            sauvegardees: saved,
+            erreurs: errors
           }
         }));
       } catch (error) {
@@ -205,7 +228,7 @@ const startProductionServer = async () => {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: false,
-          error: 'Erreur lors de l\'extraction des annonces'
+          error: error.message || 'Erreur lors de l\'extraction des annonces'
         }));
       }
       return;
