@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Vérifier s'il y a des fichiers stagés
+if git diff --cached --quiet; then
+  echo "Aucun fichier stagé, skip versioning"
+  exit 0
+fi
+
+# Récupérer la dernière version taggée
+LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+
+# Vérifier s'il y a des commits depuis le dernier tag
+if [ "$(git rev-list ${LAST_TAG}..HEAD --count)" -eq "0" ]; then
+  echo "Aucun nouveau commit depuis ${LAST_TAG}, skip versioning"
+  exit 0
+fi
+
+# Exécuter standard-version pour bumper la version
+echo "🔄 Versionnage automatique en cours..."
+npm run release -- --skip.commit --skip.tag
+
+# Ajouter les fichiers modifiés par standard-version au commit
+git add package.json package-lock.json CHANGELOG.md
+
+echo "✅ Version mise à jour automatiquement"
