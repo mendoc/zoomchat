@@ -6,6 +6,7 @@ import { createBot, notifyExtractionAdmin } from './bot.js';
 import { initDatabase, searchAnnonces, getLatestParution, saveAnnonce } from './database.js';
 import { downloadAndSplitPDF } from './pdfSplitter.js';
 import { extractAllAnnonces, cleanAnnonce } from './geminiExtractor.js';
+import { createCompositeText, generateEmbedding, embeddingToPostgres } from './embeddingService.js';
 
 // Créer l'instance du bot
 const bot = createBot(process.env.TELEGRAM_BOT_TOKEN);
@@ -192,6 +193,18 @@ const startProductionServer = async () => {
 
         for (const annonce of annoncesCleaned) {
           try {
+            // Générer l'embedding pour l'annonce
+            let embedding = null;
+            try {
+              const compositeText = createCompositeText(annonce);
+              const embeddingVector = await generateEmbedding(compositeText);
+              embedding = embeddingToPostgres(embeddingVector);
+              console.log(`✅ Embedding généré pour ${annonce.reference}`);
+            } catch (embError) {
+              console.error(`⚠️ Erreur embedding pour ${annonce.reference}:`, embError.message);
+              // Continuer même si l'embedding échoue
+            }
+
             await saveAnnonce({
               parutionId: parution.id,
               category: annonce.category,
@@ -201,7 +214,8 @@ const startProductionServer = async () => {
               description: annonce.description,
               contact: annonce.contact,
               price: annonce.price,
-              location: annonce.location
+              location: annonce.location,
+              embedding: embedding
             });
             saved++;
           } catch (error) {

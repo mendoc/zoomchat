@@ -393,6 +393,7 @@ export async function getLatestParution() {
  * @param {string} data.contact - Informations de contact (optionnel)
  * @param {string} data.price - Prix (optionnel)
  * @param {string} data.location - Localisation (optionnel)
+ * @param {string} data.embedding - Embedding vectoriel (optionnel)
  * @returns {Promise<object>} L'annonce créée
  */
 export async function saveAnnonce(data) {
@@ -402,9 +403,9 @@ export async function saveAnnonce(data) {
     const result = await client.query(
       `INSERT INTO annonces (
         parution_id, category, subcategory, title, reference, description,
-        contact, price, location
+        contact, price, location, embedding
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::vector)
        ON CONFLICT (reference) DO UPDATE SET
          parution_id = $1,
          category = $2,
@@ -413,7 +414,8 @@ export async function saveAnnonce(data) {
          description = $6,
          contact = $7,
          price = $8,
-         location = $9
+         location = $9,
+         embedding = $10::vector
        RETURNING *`,
       [
         data.parutionId,
@@ -424,7 +426,8 @@ export async function saveAnnonce(data) {
         data.description,
         data.contact,
         data.price,
-        data.location
+        data.location,
+        data.embedding || null
       ]
     );
 

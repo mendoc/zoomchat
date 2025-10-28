@@ -1,5 +1,6 @@
 import { Bot, InputFile } from 'grammy';
 import { addSubscriber, removeSubscriber, getSubscriber, getAllActiveSubscribers, searchAnnonces, getLatestParution } from './database.js';
+import { hybridSearch, formatSearchResults } from './hybridSearch.js';
 
 /**
  * Envoie une notification à l'administrateur lors d'une action d'abonnement/désabonnement
@@ -217,12 +218,6 @@ Envoyez-moi simplement votre recherche en message et je parcourrai toutes les an
       parse_mode: 'Markdown',
       ...replyMarkup
     });
-  });
-
-  // Commande /test
-  bot.command('test', async (ctx) => {
-    const msg = '🚀 Lancement du test d\'extraction des annonces...';
-    await ctx.reply(msg);
   });
 
   // Commande /dernier - Envoie le dernier PDF publié
@@ -496,7 +491,7 @@ Envoyez-moi un message décrivant ce que vous cherchez. Je parcourrai les annonc
     }
   });
 
-  // Handler pour les messages texte - Recherche d'annonces
+  // Handler pour les messages texte - Recherche hybride d'annonces
   bot.on('message:text', async (ctx) => {
     try {
       const query = ctx.message.text;
@@ -518,75 +513,26 @@ Envoyez-moi un message décrivant ce que vous cherchez. Je parcourrai les annonc
       // Afficher un indicateur de saisie
       await ctx.replyWithChatAction('typing');
 
-      console.log(`🔍 Recherche pour "${query}"`);
+      console.log(`🔍 Recherche hybride pour "${query}"`);
 
-      // Effectuer la recherche (limité à 10 résultats)
-      const resultats = await searchAnnonces(query, 10);
-
-      if (resultats.length === 0) {
-        await ctx.reply(
-          '😔 *Aucune annonce trouvée*\n\n' +
-          `Je n'ai pas trouvé d'annonces correspondant à "${query}".\n\n` +
-          '💡 *Conseils* :\n' +
-          '• Essayez avec des mots-clés plus simples\n' +
-          '• Vérifiez l\'orthographe\n' +
-          '• Utilisez des termes génériques (ex: "studio" au lieu de "studio meublé avec piscine")',
-          { parse_mode: 'Markdown' }
-        );
-        return;
-      }
-
-      // Formater les résultats
-      let response = `🔍 *${resultats.length} annonce${resultats.length > 1 ? 's' : ''} trouvée${resultats.length > 1 ? 's' : ''}*\n`;
-      response += `📝 Recherche : "${query}"\n\n`;
-      response += '─────────────────────\n\n';
-
-      resultats.forEach((annonce, index) => {
-        // Construire l'affichage avec les nouveaux champs
-        response += `${index + 1}. ${annonce.category ? `*[${annonce.category}]*` : ''}\n`;
-
-        // Titre en gras
-        if (annonce.title) {
-          response += `*${annonce.title}*\n`;
-        }
-
-        // Description (tronquée si trop longue)
-        if (annonce.description && annonce.description.length > 0) {
-          const description = annonce.description.length > 150
-            ? annonce.description.substring(0, 150) + '...'
-            : annonce.description;
-          response += `${description}\n`;
-        }
-
-        // Informations complémentaires
-        if (annonce.subcategory) {
-          response += `🏷️ ${annonce.subcategory}\n`;
-        }
-        if (annonce.location) {
-          response += `📍 ${annonce.location}\n`;
-        }
-        if (annonce.price) {
-          response += `💰 ${annonce.price}\n`;
-        }
-        if (annonce.contact) {
-          response += `📞 ${annonce.contact}\n`;
-        }
-        if (annonce.reference) {
-          response += `🔖 Réf: ${annonce.reference}\n`;
-        }
-
-        response += '\n';
+      // Effectuer la recherche hybride (embeddings + FTS)
+      const resultats = await hybridSearch(query, {
+        limit: 10,
+        vectorWeight: 0.7,
+        ftsWeight: 0.3,
+        minScore: 0.3
       });
 
-      // Si plus de résultats disponibles
-      if (resultats.length === 10) {
-        response += '💡 _Seuls les 10 premiers résultats sont affichés. Affinez votre recherche pour des résultats plus précis._';
-      }
+      // Formater et envoyer les résultats
+      const response = formatSearchResults(resultats, query);
 
       await ctx.reply(response, { parse_mode: 'Markdown' });
 
+      console.log(`✅ ${resultats.length} résultats envoyés pour "${query}"`);
     } catch (error) {
-      console.error('Erreur recherche annonces:', error);
+      console.error('❌ Erreur lors de la recherche:', error);
+
+      // Message d'erreur utilisateur
       await ctx.reply(
         '❌ Une erreur est survenue lors de la recherche.\n\n' +
         'Veuillez réessayer dans quelques instants.'
