@@ -21,9 +21,12 @@ fi
 
 # Exécuter standard-version pour bumper la version
 echo "🔄 Versionnage automatique en cours..."
-npm run release -- --skip.commit --skip.tag
-
-# Ajouter les fichiers modifiés par standard-version au commit
-git add package.json package-lock.json CHANGELOG.md
-
-echo "✅ Version mise à jour automatiquement"
+if npm run release -- --skip.commit --skip.tag; then
+  # Ajouter les fichiers modifiés par standard-version au commit
+  git add package.json package-lock.json CHANGELOG.md
+  echo "✅ Version mise à jour automatiquement"
+else
+  echo "⚠️  Erreur lors du versionnage, commit annulé"
+  echo "   Utilisez 'git commit --no-verify' pour bypasser le hook si nécessaire"
+  exit 1
+fi

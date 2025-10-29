@@ -7,8 +7,8 @@ WORKDIR /app
 # Copier les fichiers de dépendances
 COPY package*.json ./
 
-# Installer les dépendances de production uniquement
-RUN npm ci --only=production
+# Installer les dépendances de production uniquement (sans les scripts de setup comme husky)
+RUN npm ci --omit=dev --ignore-scripts
 
 # Copier le code source de l'application (nouvelle architecture)
 COPY server.js ./

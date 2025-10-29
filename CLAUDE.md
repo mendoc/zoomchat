@@ -146,33 +146,80 @@ npm run release:first   # First release (doesn't bump version)
 
 ### Deployment
 
-**Le déploiement est automatique avec push !** Utilisez :
+**Le déploiement utilise un build Docker local** pour éviter les coûts Cloud Build :
+
+#### Prérequis
+- **Docker Desktop** doit être installé et démarré
+- Authentification GCP configurée : `gcloud auth login`
+
+#### Workflow de déploiement
+
+**Option 1 : Déploiement complet (push Git + deploy)**
 ```bash
-git deploy   # Alias Git qui fait git push puis npm run deploy automatiquement
+git deploy   # Alias Git qui fait git push puis npm run deploy
 ```
 
-**Commandes manuelles** (si besoin de déployer sans pusher) :
+**Option 2 : Déploiement sans push Git**
 ```bash
-npm run deploy   # Déploie uniquement sur Cloud Run
+npm run deploy   # Build local + push GCR + déploiement Cloud Run
+```
 
-# OU déployer manuellement avec gcloud :
-# Deploy webhook handler
-gcloud functions deploy telegramWebhook \
-  --runtime nodejs20 \
-  --trigger-http \
-  --allow-unauthenticated \
-  --entry-point telegramWebhook \
-  --region europe-west1 \
-  --set-env-vars TELEGRAM_BOT_TOKEN=your_token
+#### Comment ça fonctionne (`scripts/deploy.sh`)
 
-# Deploy webhook setup function
-gcloud functions deploy setWebhook \
-  --runtime nodejs20 \
-  --trigger-http \
-  --allow-unauthenticated \
-  --entry-point setWebhook \
-  --region europe-west1 \
-  --set-env-vars TELEGRAM_BOT_TOKEN=your_token,WEBHOOK_URL=your_function_url
+Le script de déploiement effectue les étapes suivantes :
+
+1. **Vérifications** :
+   - Vérifie que `.env.prod` existe
+   - Vérifie que Docker est installé et démarré
+   - Configure l'authentification Docker pour GCR (si nécessaire)
+
+2. **Build de l'image Docker localement** :
+   ```bash
+   docker build -t gcr.io/zoomchat-476308/zoomchat:VERSION .
+   ```
+   - Build avec `--platform linux/amd64` pour compatibilité Cloud Run
+   - Tag avec numéro de version depuis `package.json`
+   - Tag également avec `latest`
+
+3. **Push vers Google Container Registry** :
+   ```bash
+   docker push gcr.io/zoomchat-476308/zoomchat:VERSION
+   docker push gcr.io/zoomchat-476308/zoomchat:latest
+   ```
+   - Aucun coût Cloud Build (build 100% local)
+   - Coût de stockage : ~$0.008/mois pour une image de 300 MB
+
+4. **Déploiement sur Cloud Run** :
+   ```bash
+   gcloud run deploy zoomchat-bot \
+     --image gcr.io/zoomchat-476308/zoomchat:VERSION \
+     --region europe-west1 \
+     --set-env-vars "..." \
+     --revision-suffix "vX-X-X"
+   ```
+   - Déploie l'image depuis GCR (pas de build cloud)
+   - Économie de ~92% sur les coûts de build
+
+5. **Configuration du webhook** (optionnel) :
+   - Le script propose de configurer le webhook Telegram automatiquement
+
+#### Commandes utiles
+
+```bash
+# Lister les images dans GCR
+gcloud container images list --repository=gcr.io/zoomchat-476308
+
+# Voir les tags d'une image
+gcloud container images list-tags gcr.io/zoomchat-476308/zoomchat
+
+# Supprimer une vieille image (nettoyage)
+gcloud container images delete gcr.io/zoomchat-476308/zoomchat:VERSION
+
+# Voir les logs Cloud Run
+gcloud run services logs tail zoomchat-bot --region europe-west1
+
+# Accéder à la console Cloud Run
+https://console.cloud.google.com/run/detail/europe-west1/zoomchat-bot/metrics?project=zoomchat-476308
 ```
 
 ## Environment Variables
