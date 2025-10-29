@@ -1,6 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 # Vérifier s'il y a des fichiers stagés
 if git diff --cached --quiet; then
   echo "Aucun fichier stagé, skip versioning"
@@ -8,12 +5,18 @@ if git diff --cached --quiet; then
 fi
 
 # Récupérer la dernière version taggée
-LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
 
-# Vérifier s'il y a des commits depuis le dernier tag
-if [ "$(git rev-list ${LAST_TAG}..HEAD --count)" -eq "0" ]; then
-  echo "Aucun nouveau commit depuis ${LAST_TAG}, skip versioning"
-  exit 0
+# Si aucun tag n'existe, c'est la première release
+if [ -z "$LAST_TAG" ]; then
+  echo "🆕 Première release détectée"
+else
+  # Vérifier s'il y a des commits depuis le dernier tag
+  COMMITS_SINCE=$(git rev-list ${LAST_TAG}..HEAD --count 2>/dev/null)
+  if [ "$COMMITS_SINCE" -eq "0" ]; then
+    echo "Aucun nouveau commit depuis ${LAST_TAG}, skip versioning"
+    exit 0
+  fi
 fi
 
 # Exécuter standard-version pour bumper la version

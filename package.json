@@ -1,15 +1,19 @@
 {
   "name": "zoomchat",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "Un assistant virtuel pour trouver des petites annonces dans le Zoom Hebdo",
-  "main": "src/index.js",
+  "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
+    "start": "node server.js",
+    "dev": "nodemon server.js",
     "deploy": "bash scripts/deploy.sh",
+    "push": "git push && npm run deploy",
     "extract": "node scripts/extractor.js",
     "search": "node scripts/search.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
     "release": "standard-version",
     "release:major": "standard-version --release-as major",
     "release:minor": "standard-version --release-as minor",
@@ -28,18 +32,21 @@
   "dependencies": {
     "@google/genai": "^1.27.0",
     "dotenv": "^16.4.7",
+    "drizzle-kit": "^0.31.6",
+    "drizzle-orm": "^0.44.7",
+    "express": "^5.1.0",
     "grammy": "^1.30.0",
     "mime": "^4.1.0",
-    "openai": "^6.7.0",
-    "pdf-img-convert": "^1.2.1",
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^5.4.296",
-    "pg": "^8.13.1"
+    "pg": "^8.13.1",
+    "pino": "^10.1.0",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^24.9.1",
     "husky": "^9.1.7",
     "nodemon": "^3.1.9",
+    "pino-pretty": "^13.1.2",
     "standard-version": "^9.5.0"
   },
   "engines": {

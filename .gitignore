@@ -152,3 +152,6 @@ labo/*.sql
 
 # Claude Code configuration locale
 .claude/settings.local.json
+
+# Drizzle
+migrations/meta/

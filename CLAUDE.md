@@ -128,6 +128,14 @@ npm start            # Start bot (checks NODE_ENV)
 ```
 
 ### Versioning & Releases
+
+**Le versionnage est automatique !** À chaque `git commit`, un hook Git (Husky) :
+- Analyse les commits depuis la dernière version
+- Détermine le type de bump (major/minor/patch) selon les Conventional Commits
+- Met à jour automatiquement `package.json`, `package-lock.json` et `CHANGELOG.md`
+- Ajoute ces fichiers au commit en cours
+
+**Commandes manuelles** (optionnelles, pour forcer un type de version) :
 ```bash
 npm run release         # Auto-detect version bump based on conventional commits
 npm run release:major   # Force MAJOR version bump (1.0.0 → 2.0.0)
@@ -137,7 +145,17 @@ npm run release:first   # First release (doesn't bump version)
 ```
 
 ### Deployment
+
+**Le déploiement est automatique avec push !** Utilisez :
 ```bash
+git deploy   # Alias Git qui fait git push puis npm run deploy automatiquement
+```
+
+**Commandes manuelles** (si besoin de déployer sans pusher) :
+```bash
+npm run deploy   # Déploie uniquement sur Cloud Run
+
+# OU déployer manuellement avec gcloud :
 # Deploy webhook handler
 gcloud functions deploy telegramWebhook \
   --runtime nodejs20 \
@@ -228,19 +246,29 @@ Required in `.env` file:
 6. Code.gs queries the database for active subscribers and sends PDFs to all of them
 7. Users can interact with the bot to search within publications (feature in development)
 
+### Git Aliases Setup
+
+Pour configurer l'alias `git deploy` (déjà configuré dans ce repo) :
+```bash
+git config --local alias.deploy '!git push && npm run deploy'
+```
+
+Cet alias combine automatiquement le push Git et le déploiement Cloud Run.
+
 ### Version Management
 - **Conventional Commits**: The project uses [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages
 - **Semantic Versioning**: Follows [semver](https://semver.org/) (MAJOR.MINOR.PATCH)
-- **Automated Versioning**: `standard-version` automatically:
-  - Analyzes commit messages to determine version bump type
-  - Updates `package.json` version
-  - Generates/updates `CHANGELOG.md`
-  - Creates a release commit
+- **Automated Versioning via Git Hooks**:
+  - **Husky** gère un hook `pre-commit` qui s'exécute automatiquement avant chaque commit
+  - Le hook analyse les commits depuis la dernière version taggée
+  - `standard-version` détermine automatiquement le type de bump selon les Conventional Commits
+  - Les fichiers `package.json`, `package-lock.json` et `CHANGELOG.md` sont mis à jour et ajoutés au commit
+  - **Pas besoin d'exécuter manuellement** `npm run release` (sauf pour forcer un type de version)
 - **Commit Types**:
   - `feat:` → MINOR bump (new feature)
   - `fix:` → PATCH bump (bug fix)
   - `BREAKING CHANGE:` or `!` → MAJOR bump (breaking change)
   - Other types (`docs:`, `refactor:`, etc.) → no version bump
 - **Configuration**: `.versionrc.json` contains standard-version configuration
-- **Workflow**: See `CONTRIBUTING.md` for detailed contribution guidelines
-- to memorize Ne mentionne jamais claude code dans les messages de commit
+- **Hook**: `.husky/pre-commit` gère le versionnage automatique
+- **Workflow**: Simplement faire `git commit -m "feat: nouvelle fonctionnalité"` et le versionnage se fait automatiquement

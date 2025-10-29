@@ -10,8 +10,16 @@ COPY package*.json ./
 # Installer les dépendances de production uniquement
 RUN npm ci --only=production
 
-# Copier le code source de l'application
-COPY src/ ./src/
+# Copier le code source de l'application (nouvelle architecture)
+COPY server.js ./
+COPY db/ ./db/
+COPY models/ ./models/
+COPY services/ ./services/
+COPY bot/ ./bot/
+COPY routes/ ./routes/
+COPY middleware/ ./middleware/
+COPY shared/ ./shared/
+COPY locales/ ./locales/
 
 # Exposer le port 8080 (requis par Cloud Run)
 EXPOSE 8080
@@ -21,4 +29,4 @@ ENV NODE_ENV=production
 ENV PORT=8080
 
 # Démarrer l'application
-CMD ["node", "src/index.js"]
+CMD ["node", "server.js"]

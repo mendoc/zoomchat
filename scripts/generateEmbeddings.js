@@ -1,19 +1,21 @@
 import 'dotenv/config';
-import pg from 'pg';
-import { createCompositeText, generateEmbedding, embeddingToPostgres } from '../src/embeddingService.js';
+import { env } from '../shared/config/env.js';
+import { logger } from '../shared/logger.js';
+import { EmbeddingService } from '../services/search/EmbeddingService.js';
+import { getPool } from '../db/connection.js';
 
-const { Pool } = pg;
+/**
+ * Script pour générer et sauvegarder les embeddings pour toutes les annonces
+ */
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+const embeddingService = new EmbeddingService(env.GEMINI_API_KEY);
+const pool = getPool();
 
 /**
  * Génère et sauvegarde les embeddings pour toutes les annonces
  */
 async function generateAllEmbeddings() {
-  console.log('🚀 Génération des embeddings pour toutes les annonces\n');
+  logger.info('Génération des embeddings pour toutes les annonces');
 
   try {
     // Récupérer toutes les annonces sans embedding
@@ -25,10 +27,10 @@ async function generateAllEmbeddings() {
     );
 
     const annonces = result.rows;
-    console.log(`📊 ${annonces.length} annonces à traiter\n`);
+    logger.info({ count: annonces.length }, 'Annonces à traiter');
 
     if (annonces.length === 0) {
-      console.log('✅ Toutes les annonces ont déjà un embedding');
+      logger.info('Toutes les annonces ont déjà un embedding');
       return;
     }
 
@@ -43,13 +45,13 @@ async function generateAllEmbeddings() {
 
       try {
         // Créer le texte composite
-        const text = createCompositeText(annonce);
+        const text = embeddingService.createCompositeText(annonce);
 
         // Générer l'embedding
-        const embedding = await generateEmbedding(text);
+        const embedding = await embeddingService.generateEmbedding(text);
 
         // Convertir en format PostgreSQL
-        const embeddingStr = embeddingToPostgres(embedding);
+        const embeddingStr = embeddingService.embeddingToPostgres(embedding);
 
         // Sauvegarder en base
         await pool.query(
@@ -63,10 +65,17 @@ async function generateAllEmbeddings() {
         if ((i + 1) % 10 === 0 || i === annonces.length - 1) {
           const elapsed = Math.round((Date.now() - startTime) / 1000);
           const remaining = Math.round((elapsed / (i + 1)) * (annonces.length - i - 1));
-          console.log(
-            `✅ ${i + 1}/${annonces.length} (${progress}%) | ` +
-            `Réussis: ${successCount} | Erreurs: ${errorCount} | ` +
-            `Temps: ${elapsed}s | Reste: ~${remaining}s`
+          logger.info(
+            {
+              current: i + 1,
+              total: annonces.length,
+              progress,
+              successCount,
+              errorCount,
+              elapsed,
+              remaining
+            },
+            'Progression'
           );
         }
 
@@ -76,20 +85,26 @@ async function generateAllEmbeddings() {
         }
       } catch (error) {
         errorCount++;
-        console.error(`❌ Erreur pour annonce ${annonce.id} (${annonce.reference}):`, error.message);
-
-        // Continuer malgré l'erreur
+        logger.error(
+          { err: error, annonceId: annonce.id, reference: annonce.reference },
+          'Erreur lors de la génération d\'embedding'
+        );
         continue;
       }
     }
 
     const totalTime = Math.round((Date.now() - startTime) / 1000);
 
-    console.log('\n📊 RÉSUMÉ:');
-    console.log(`   ✅ Réussis: ${successCount}`);
-    console.log(`   ❌ Erreurs: ${errorCount}`);
-    console.log(`   ⏱️  Temps total: ${totalTime}s (${Math.round(totalTime / 60)}min)`);
-    console.log(`   📈 Vitesse: ${Math.round(annonces.length / (totalTime / 60))} annonces/min`);
+    logger.info(
+      {
+        successCount,
+        errorCount,
+        totalTime,
+        totalMinutes: Math.round(totalTime / 60),
+        speed: Math.round(annonces.length / (totalTime / 60))
+      },
+      'Résumé de génération'
+    );
 
     // Vérification finale
     const verif = await pool.query(
@@ -100,16 +115,20 @@ async function generateAllEmbeddings() {
        FROM annonces`
     );
 
-    console.log('\n🔍 VÉRIFICATION:');
-    console.log(`   Total annonces: ${verif.rows[0].total}`);
-    console.log(`   Avec embedding: ${verif.rows[0].with_embedding}`);
-    console.log(`   Sans embedding: ${verif.rows[0].without_embedding}`);
+    logger.info(
+      {
+        total: verif.rows[0].total,
+        withEmbedding: verif.rows[0].with_embedding,
+        withoutEmbedding: verif.rows[0].without_embedding
+      },
+      'Vérification finale'
+    );
 
     if (parseInt(verif.rows[0].without_embedding) === 0) {
-      console.log('\n🎉 Toutes les annonces ont maintenant un embedding !');
+      logger.info('Toutes les annonces ont maintenant un embedding');
     }
   } catch (error) {
-    console.error('\n❌ Erreur fatale:', error);
+    logger.error({ err: error }, 'Erreur fatale');
     throw error;
   } finally {
     await pool.end();
@@ -121,7 +140,7 @@ async function generateAllEmbeddings() {
  * @param {Array<number>} annonceIds - Liste d'IDs d'annonces
  */
 async function regenerateEmbeddings(annonceIds) {
-  console.log(`🔄 Régénération des embeddings pour ${annonceIds.length} annonces\n`);
+  logger.info({ count: annonceIds.length }, 'Régénération des embeddings');
 
   try {
     const result = await pool.query(
@@ -136,9 +155,9 @@ async function regenerateEmbeddings(annonceIds) {
 
     for (const annonce of annonces) {
       try {
-        const text = createCompositeText(annonce);
-        const embedding = await generateEmbedding(text);
-        const embeddingStr = embeddingToPostgres(embedding);
+        const text = embeddingService.createCompositeText(annonce);
+        const embedding = await embeddingService.generateEmbedding(text);
+        const embeddingStr = embeddingService.embeddingToPostgres(embedding);
 
         await pool.query(
           `UPDATE annonces SET embedding = $1::vector WHERE id = $2`,
@@ -146,17 +165,20 @@ async function regenerateEmbeddings(annonceIds) {
         );
 
         successCount++;
-        console.log(`✅ Annonce ${annonce.id} (${annonce.reference})`);
+        logger.info({ annonceId: annonce.id, reference: annonce.reference }, 'Embedding régénéré');
 
         await new Promise(resolve => setTimeout(resolve, 50));
       } catch (error) {
-        console.error(`❌ Erreur pour annonce ${annonce.id}:`, error.message);
+        logger.error({ err: error, annonceId: annonce.id }, 'Erreur lors de la régénération');
       }
     }
 
-    console.log(`\n✅ ${successCount}/${annonces.length} embeddings régénérés`);
+    logger.info(
+      { successCount, total: annonces.length },
+      'Embeddings régénérés'
+    );
   } catch (error) {
-    console.error('\n❌ Erreur:', error);
+    logger.error({ err: error }, 'Erreur lors de la régénération');
     throw error;
   } finally {
     await pool.end();

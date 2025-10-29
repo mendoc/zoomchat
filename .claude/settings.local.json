@@ -16,7 +16,18 @@
       "Bash(gcloud run revisions list:*)",
       "WebSearch",
       "WebFetch(domain:platform.openai.com)",
-      "Bash(npm test)"
+      "Bash(npm test)",
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(node -e:*)",
+      "Bash(node scripts/generateEmbeddings.js:*)",
+      "Bash(node scripts/updateEmbeddingDimension.js:*)",
+      "Bash(node scripts/testEmbedding.js:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx drizzle-kit:*)",
+      "Bash(find:*)",
+      "Bash(awk:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []
