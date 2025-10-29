@@ -4,7 +4,7 @@ export const PDF_CONFIG = {
 };
 
 export const GEMINI_CONFIG = {
-  MODEL_NAME: 'gemini-2.0-flash-exp',
+  MODEL_NAME: 'gemini-2.5-flash',
   MAX_RETRIES: 3,
   RETRY_DELAYS: [1000, 3000, 10000],
   RATE_LIMIT_DELAY: 500,
@@ -21,6 +21,9 @@ export const EMBEDDING_CONFIG = {
 export const SEARCH_CONFIG = {
   DEFAULT_LIMIT: 10,
   DEFAULT_MIN_SCORE: 0.3,
+  // Filtre de pertinence LLM
+  RELEVANCE_FILTER_ENABLED: true, // Active/désactive le filtrage par LLM
+  MIN_RESULTS_FOR_FILTERING: 3, // Nombre minimum de résultats avant d'activer le filtrage
 };
 
 export const NOTIFICATION_CONFIG = {

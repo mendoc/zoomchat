@@ -10,10 +10,12 @@ export class VectorSearchService {
   /**
    * @param {AnnonceRepository} annonceRepo
    * @param {EmbeddingService} embeddingService
+   * @param {RelevanceFilterService} relevanceFilterService - Service de filtrage de pertinence (optionnel)
    */
-  constructor(annonceRepo, embeddingService) {
+  constructor(annonceRepo, embeddingService, relevanceFilterService = null) {
     this.annonceRepo = annonceRepo;
     this.embeddingService = embeddingService;
+    this.relevanceFilterService = relevanceFilterService;
   }
 
   /**
@@ -63,8 +65,26 @@ export class VectorSearchService {
         'Recherche vectorielle effectuée'
       );
 
-      // 3. Formater les résultats pour Telegram
-      const formattedResults = this.formatResults(results, query);
+      // 3. Filtrer les résultats non pertinents avec le LLM (si activé)
+      let filteredResults = results;
+      if (this.relevanceFilterService) {
+        filteredResults = await this.relevanceFilterService.filterIrrelevantResults(query, results);
+
+        if (filteredResults.length < results.length) {
+          logger.info(
+            {
+              query,
+              originalCount: results.length,
+              filteredCount: filteredResults.length,
+              removedCount: results.length - filteredResults.length
+            },
+            'Résultats filtrés par le service de pertinence'
+          );
+        }
+      }
+
+      // 4. Formater les résultats pour Telegram
+      const formattedResults = this.formatResults(filteredResults, query);
 
       return formattedResults;
 
@@ -120,7 +140,7 @@ export class VectorSearchService {
       }
 
       if (result.contact) {
-        message += `\n📞 Contact: ${result.contact.replace("Tél.", "").trim()}`;
+        message += `\n📞 ${result.contact.replace("Tél.", "").trim()}`;
       }
 
       if (result.reference) {

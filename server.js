@@ -15,6 +15,7 @@ import { GeminiService } from './services/extraction/GeminiService.js';
 import { ExtractionOrchestrator } from './services/extraction/ExtractionOrchestrator.js';
 import { EmbeddingService } from './services/search/EmbeddingService.js';
 import { VectorSearchService } from './services/search/VectorSearchService.js';
+import { RelevanceFilterService } from './services/search/RelevanceFilterService.js';
 import { AdminNotifier } from './services/notification/AdminNotifier.js';
 import { MassNotifyService } from './services/notification/MassNotifyService.js';
 
@@ -48,6 +49,7 @@ logger.info('Repositories initialisés');
 const pdfService = new PdfService();
 const geminiService = new GeminiService(env.GEMINI_API_KEY);
 const embeddingService = new EmbeddingService(env.GEMINI_API_KEY);
+const relevanceFilterService = new RelevanceFilterService(env.GEMINI_API_KEY);
 
 const extractionOrchestrator = new ExtractionOrchestrator(
   pdfService,
@@ -59,7 +61,8 @@ const extractionOrchestrator = new ExtractionOrchestrator(
 
 const vectorSearchService = new VectorSearchService(
   annonceRepo,
-  embeddingService
+  embeddingService,
+  relevanceFilterService
 );
 
 logger.info('Services initialisés');
