@@ -7,10 +7,10 @@ import { ValidationError } from '../shared/errors.js';
  */
 export class SearchRoute {
   /**
-   * @param {HybridSearchService} hybridSearchService
+   * @param {VectorSearchService} vectorSearchService
    */
-  constructor(hybridSearchService) {
-    this.hybridSearchService = hybridSearchService;
+  constructor(vectorSearchService) {
+    this.vectorSearchService = vectorSearchService;
   }
 
   /**
@@ -29,7 +29,7 @@ export class SearchRoute {
       logger.info({ query }, 'Recherche HTTP reçue');
 
       // Effectuer la recherche
-      const results = await this.hybridSearchService.search(query);
+      const results = await this.vectorSearchService.search(query);
 
       logger.info(
         { query, resultsCount: results.length },

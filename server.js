@@ -14,7 +14,7 @@ import { PdfService } from './services/extraction/PdfService.js';
 import { GeminiService } from './services/extraction/GeminiService.js';
 import { ExtractionOrchestrator } from './services/extraction/ExtractionOrchestrator.js';
 import { EmbeddingService } from './services/search/EmbeddingService.js';
-import { HybridSearchService } from './services/search/HybridSearchService.js';
+import { VectorSearchService } from './services/search/VectorSearchService.js';
 import { AdminNotifier } from './services/notification/AdminNotifier.js';
 import { MassNotifyService } from './services/notification/MassNotifyService.js';
 
@@ -57,7 +57,7 @@ const extractionOrchestrator = new ExtractionOrchestrator(
   parutionRepo
 );
 
-const hybridSearchService = new HybridSearchService(
+const vectorSearchService = new VectorSearchService(
   annonceRepo,
   embeddingService
 );
@@ -68,7 +68,7 @@ logger.info('Services initialisés');
 const bot = BotFactory.create(env.TELEGRAM_BOT_TOKEN, {
   subscriberRepo,
   parutionRepo,
-  hybridSearchService,
+  vectorSearchService,
   adminNotifier: null // Sera initialisé ci-dessous
 });
 
@@ -82,7 +82,7 @@ logger.info('Services de notification initialisés');
 
 // Initialiser les routes communes
 const healthRoute = new HealthRoute();
-const searchRoute = new SearchRoute(hybridSearchService);
+const searchRoute = new SearchRoute(vectorSearchService);
 const extractRoute = new ExtractRoute(extractionOrchestrator, adminNotifier);
 
 logger.info('Routes communes initialisées');

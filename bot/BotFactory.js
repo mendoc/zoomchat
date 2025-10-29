@@ -20,7 +20,7 @@ export class BotFactory {
    * @param {object} dependencies - Dépendances nécessaires
    * @param {SubscriberRepository} dependencies.subscriberRepo
    * @param {ParutionRepository} dependencies.parutionRepo
-   * @param {HybridSearchService} dependencies.hybridSearchService
+   * @param {VectorSearchService} dependencies.vectorSearchService
    * @param {AdminNotifier} dependencies.adminNotifier
    * @returns {Bot} Instance du bot configurée
    */
@@ -28,7 +28,7 @@ export class BotFactory {
     const {
       subscriberRepo,
       parutionRepo,
-      hybridSearchService,
+      vectorSearchService,
       adminNotifier
     } = dependencies;
 
@@ -45,7 +45,7 @@ export class BotFactory {
     const desabonnerCommand = new DesabonnerCommand(subscriberRepo, adminNotifier);
 
     // Instancier les handlers
-    const textHandler = new TextHandler(hybridSearchService);
+    const textHandler = new TextHandler(vectorSearchService);
     const callbackHandler = new CallbackHandler(subscriberRepo, adminNotifier);
 
     // Enregistrer les commandes

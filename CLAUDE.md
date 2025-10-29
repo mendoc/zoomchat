@@ -61,7 +61,7 @@ The ZoomChat system uses a dual-component architecture:
    - `getAllActiveSubscribers()`: Returns all active subscribers
    - `addParution(data)`: Saves a new parution
    - `saveAnnonce(data)`: Saves an extracted ad with all fields
-   - `searchAnnonces(query, limit)`: Searches ads by keywords (title, description, category, location, type, reference)
+   - `vectorSearch(queryEmbedding, options)`: Vector similarity search using embeddings
    - `closeDatabase()`: Closes the database connection pool
    - Uses connection pooling for efficient resource management
 
@@ -82,9 +82,9 @@ The ZoomChat system uses a dual-component architecture:
 
 6. **schema.sql** - Database schema definition
    - Defines all tables: `subscribers`, `parutions`, `envois`, `annonces`
-   - `annonces` table includes: parution_id, category, subcategory, title, reference, description, contact, price, location
-   - Uses PostgreSQL full-text search (tsvector) for optimized search
-   - Includes indexes for performance optimization (GIN index on search_vector)
+   - `annonces` table includes: parution_id, category, subcategory, title, reference, description, contact, price, location, embedding
+   - Uses PostgreSQL vector similarity search via pgvector extension (HNSW index)
+   - Embeddings generated with Google Gemini embedding-001 model (1536 dimensions)
    - Contains column documentation
 
 ### Auto-notification System (Code.gs)
@@ -244,7 +244,31 @@ Required in `.env` file:
 4. Code.gs extracts PDF and sends to Telegram chat
 5. Users can subscribe via `/abonner` to receive PDFs automatically
 6. Code.gs queries the database for active subscribers and sends PDFs to all of them
-7. Users can interact with the bot to search within publications (feature in development)
+7. Users can interact with the bot to search within publications using semantic vector search
+
+### Search Architecture
+
+**VectorSearchService** (`services/search/VectorSearchService.js`)
+- Pure vector similarity search using Gemini embeddings
+- No full-text search (FTS) - 100% semantic understanding
+- Automatically handles synonyms, variations, and natural language queries
+- Uses cosine distance via pgvector HNSW index for fast similarity search
+- Configurable parameters:
+  - `minScore`: Minimum similarity score (default: 0.3)
+  - `limit`: Maximum number of results (default: 10)
+
+**EmbeddingService** (`services/search/EmbeddingService.js`)
+- Generates 1536-dimensional embeddings using Gemini embedding-001 model
+- Rate limiting: 50ms between requests to respect API limits
+- Creates composite text from: category + subcategory + title + location + description
+- Used both for indexing ads and generating query embeddings
+
+**Search Flow:**
+1. User sends query to bot or HTTP endpoint `/search?query=...`
+2. `VectorSearchService` generates embedding for the query
+3. `AnnonceRepository.vectorSearch()` performs pgvector similarity search
+4. Results are formatted with emojis and category-specific icons
+5. Sent back to user via Telegram or HTTP response
 
 ### Git Aliases Setup
 

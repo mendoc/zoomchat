@@ -3,9 +3,10 @@ import { SEARCH_CONFIG, TELEGRAM_CONFIG } from '../../shared/config/constants.js
 import { ValidationError } from '../../shared/errors.js';
 
 /**
- * Service de recherche hybride combinant vector similarity et full-text search
+ * Service de recherche vectorielle pure (sans FTS)
+ * Utilise uniquement les embeddings Gemini pour la similarité sémantique
  */
-export class HybridSearchService {
+export class VectorSearchService {
   /**
    * @param {AnnonceRepository} annonceRepo
    * @param {EmbeddingService} embeddingService
@@ -16,7 +17,7 @@ export class HybridSearchService {
   }
 
   /**
-   * Effectue une recherche hybride
+   * Effectue une recherche vectorielle pure
    * @param {string} query - Requête de recherche
    * @param {object} options - Options de recherche
    * @returns {Promise<Array>} Résultats de la recherche formatés
@@ -33,15 +34,13 @@ export class HybridSearchService {
     }
 
     const searchOptions = {
-      vectorWeight: options.vectorWeight || SEARCH_CONFIG.DEFAULT_VECTOR_WEIGHT,
-      ftsWeight: options.ftsWeight || SEARCH_CONFIG.DEFAULT_FTS_WEIGHT,
       minScore: options.minScore || SEARCH_CONFIG.DEFAULT_MIN_SCORE,
       limit: options.limit || SEARCH_CONFIG.DEFAULT_LIMIT,
     };
 
     logger.info(
       { query, searchOptions },
-      'Début de recherche hybride'
+      'Début de recherche vectorielle'
     );
 
     try {
@@ -53,16 +52,15 @@ export class HybridSearchService {
         'Embedding de la requête généré'
       );
 
-      // 2. Effectuer la recherche hybride
-      const results = await this.annonceRepo.hybridSearch(
+      // 2. Effectuer la recherche vectorielle
+      const results = await this.annonceRepo.vectorSearch(
         queryEmbedding,
-        query,
         searchOptions
       );
 
       logger.info(
         { query, resultsCount: results.length },
-        'Recherche hybride effectuée'
+        'Recherche vectorielle effectuée'
       );
 
       // 3. Formater les résultats pour Telegram
@@ -73,7 +71,7 @@ export class HybridSearchService {
     } catch (error) {
       logger.error(
         { err: error, query },
-        'Erreur lors de la recherche hybride'
+        'Erreur lors de la recherche vectorielle'
       );
       throw error;
     }
@@ -92,7 +90,7 @@ export class HybridSearchService {
 
     return results.map((result, index) => {
       const emoji = this.getCategoryEmoji(result.category);
-      const score = result.combined_score || 0;
+      const score = result.vector_score || 0;
 
       // Construire le message
       let message = `${emoji} **${result.title || 'Sans titre'}**\n\n`;

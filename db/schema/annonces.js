@@ -1,16 +1,9 @@
-import { pgTable, serial, integer, text, timestamp, index, customType } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
+import { pgTable, serial, integer, text, timestamp, customType } from 'drizzle-orm/pg-core';
 import { parutions } from './parutions.js';
 
 const vector = customType({
   dataType() {
     return 'vector(1536)';
-  },
-});
-
-const tsvector = customType({
-  dataType() {
-    return 'tsvector';
   },
 });
 
@@ -28,8 +21,5 @@ export const annonces = pgTable('annonces', {
   price: text('price'),
   location: text('location'),
   embedding: vector('embedding'),
-  searchVector: tsvector('search_vector').$default(() => sql`to_tsvector('french', coalesce(title, '') || ' ' || coalesce(description, '') || ' ' || coalesce(category, '') || ' ' || coalesce(location, ''))`),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-}, (table) => ({
-  searchVectorIdx: index('idx_annonces_search_vector').on(table.searchVector),
-}));
+});

@@ -7,10 +7,10 @@ import { logger } from '../../shared/logger.js';
  */
 export class TextHandler {
   /**
-   * @param {HybridSearchService} hybridSearchService
+   * @param {VectorSearchService} vectorSearchService
    */
-  constructor(hybridSearchService) {
-    this.hybridSearchService = hybridSearchService;
+  constructor(vectorSearchService) {
+    this.vectorSearchService = vectorSearchService;
   }
 
   /**
@@ -31,7 +31,7 @@ export class TextHandler {
       }
 
       // Effectuer la recherche
-      const results = await this.hybridSearchService.search(query);
+      const results = await this.vectorSearchService.search(query);
 
       if (results.length === 0) {
         await ctx.reply(botMessages.search.noResults(query), {
