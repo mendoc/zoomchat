@@ -20,7 +20,8 @@ export class WebhookRoute {
    */
   async handle(req, res) {
     try {
-      await this.handler(req, res);
+      res.sendStatus(200);
+      this.handler(req, res);
     } catch (error) {
       logger.error({ err: error }, 'Erreur dans le webhook');
       res.status(500).send('Internal Server Error');
