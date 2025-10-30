@@ -42,12 +42,21 @@ export class RelevanceFilterService {
       // Appeler Gemini pour obtenir les validations
       const response = await this.ai.models.generateContent({
         model: GEMINI_CONFIG.MODEL_NAME,
-        contents: [{ text: prompt }],
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: prompt },
+            ],
+          },
+        ],
         config: {
           temperature: 0.1, // Très faible pour des réponses cohérentes
           responseMimeType: 'application/json',
         }
       });
+
+      logger.info(`[RelevanceFilter] Réponse LLM complète: ${response}`);
 
       const responseText = response.text;
 

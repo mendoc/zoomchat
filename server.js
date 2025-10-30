@@ -17,7 +17,6 @@ import { EmbeddingService } from './services/search/EmbeddingService.js';
 import { VectorSearchService } from './services/search/VectorSearchService.js';
 import { RelevanceFilterService } from './services/search/RelevanceFilterService.js';
 import { AdminNotifier } from './services/notification/AdminNotifier.js';
-import { MassNotifyService } from './services/notification/MassNotifyService.js';
 
 // Import routes
 import { HealthRoute } from './routes/HealthRoute.js';
@@ -79,7 +78,6 @@ logger.info('Bot créé');
 
 // Initialiser les services de notification (nécessitent le bot)
 const adminNotifier = new AdminNotifier(bot, env.ADMIN_CHAT_ID);
-const massNotifyService = new MassNotifyService(bot, subscriberRepo, envoiRepo);
 
 logger.info('Services de notification initialisés');
 
@@ -138,8 +136,10 @@ if (env.NODE_ENV === 'development') {
 
   const port = env.PORT || 8080;
   app.listen(port, () => {
+    // Base URL du webhook
+    const setWebhookUrl = env.WEBHOOK_URL.replace('/webhook', '') + '/setWebhook';
     logger.info({ port }, `Serveur démarré en mode production (webhook)`);
-    logger.info({ webhookUrl: env.WEBHOOK_URL }, 'Webhook configuré');
+    logger.info({ webhookUrl: env.WEBHOOK_URL, setWebhookUrl }, 'Webhook configuré');
   });
 }
 

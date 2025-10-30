@@ -74,9 +74,10 @@ export const botMessages = {
 
   // Recherche
   search: {
+    searching: '🔍 Recherche en cours, veuillez patientier...', 
     queryTooLong: (maxLength) => `⚠️ Votre recherche est trop longue (maximum ${maxLength} caractères).`,
     noResults: (query) => `❌ Aucune annonce trouvée pour: *${query}*\n\n💡 _Essayez avec des mots-clés différents_`,
-    resultsTitle: (query) => `🔍 *Résultats pour:* "${query}"`,
+    resultsTitle: (query) => `🔍 *Résultats pour:* "${query}"`, 
     error: '❌ Une erreur est survenue. Veuillez réessayer plus tard.'
   },
 
