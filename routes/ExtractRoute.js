@@ -1,6 +1,6 @@
 import { logger } from '../shared/logger.js';
 import { apiMessages } from '../locales/api-messages.js';
-import { ValidationError } from '../shared/errors.js';
+import { NotFoundError, ValidationError } from '../shared/errors.js';
 
 /**
  * Route d'extraction d'une parution
@@ -9,10 +9,12 @@ export class ExtractRoute {
   /**
    * @param {ExtractionOrchestrator} extractionOrchestrator
    * @param {AdminNotifier} adminNotifier
+   * @param {ParutionRepository} parutionRepository
    */
-  constructor(extractionOrchestrator, adminNotifier) {
+  constructor(extractionOrchestrator, adminNotifier, parutionRepository) {
     this.extractionOrchestrator = extractionOrchestrator;
     this.adminNotifier = adminNotifier;
+    this.parutionRepository = parutionRepository;
   }
 
   /**
@@ -22,11 +24,12 @@ export class ExtractRoute {
    */
   async handle(req, res, next) {
     try {
-      const { numero } = req.body;
+      const latestParution = await this.parutionRepository.getLatest();
 
-      if (!numero) {
-        throw new ValidationError('Le paramètre "numero" est requis');
+      if (!latestParution) {
+        throw new NotFoundError('Aucune parution trouvée');
       }
+      const { numero } = latestParution;
 
       logger.info({ numero }, 'Extraction demandée');
 

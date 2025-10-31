@@ -84,7 +84,7 @@ logger.info('Services de notification initialisés');
 // Initialiser les routes communes
 const healthRoute = new HealthRoute();
 const searchRoute = new SearchRoute(vectorSearchService);
-const extractRoute = new ExtractRoute(extractionOrchestrator, adminNotifier);
+const extractRoute = new ExtractRoute(extractionOrchestrator, adminNotifier, parutionRepo);
 
 logger.info('Routes communes initialisées');
 

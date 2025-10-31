@@ -1,6 +1,6 @@
 {
   "name": "zoomchat",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "description": "Un assistant virtuel pour trouver des petites annonces dans le Zoom Hebdo",
   "main": "server.js",
   "type": "module",
@@ -10,7 +10,6 @@
     "deploy": "bash scripts/deploy.sh",
     "push": "git push && npm run deploy",
     "extract": "node scripts/extractor.js",
-    "search": "node scripts/search.js",
     "embedding": "node scripts/generateEmbeddings.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
