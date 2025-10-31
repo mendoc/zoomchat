@@ -91,9 +91,52 @@ export class SubscriberRepository {
       logger.info({ chatId: data.chatId, nom: data.nom }, 'Nouvel abonné créé');
       return result[0];
     } catch (error) {
-      logger.error({ err: error, data }, 'Erreur lors de la création de l\'abonné');
+      logger.error({ err: error, data }, "Erreur lors de la création de l'abonné");
       throw error;
     }
+  }
+
+  /**
+   * Crée un nouvel abonné inactif (pour le tracking)
+   * @param {number} chatId - ID du chat Telegram
+   * @param {object} userData - Données de l'utilisateur
+   * @param {string} userData.firstName - Prénom
+   * @param {string} userData.lastName - Nom
+   * @param {string} userData.username - Username
+   * @returns {Promise<object>} L'abonné créé
+   */
+  async createInactive(chatId, userData) {
+    try {
+      const result = await db
+        .insert(subscribers)
+        .values({
+          chatId: chatId,
+          nom: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+          username: userData.username,
+          actif: false,
+        })
+        .returning();
+
+      logger.info({ chatId }, 'Nouvel utilisateur (inactif) créé');
+      return result[0];
+    } catch (error) {
+      logger.error({ err: error, chatId }, "Erreur lors de la création de l'utilisateur inactif");
+      throw error;
+    }
+  }
+
+  /**
+   * Trouve un abonné par son chat ID ou le crée s'il n'existe pas
+   * @param {number} chatId - L'ID du chat Telegram
+   * @param {object} userData - Données de l'utilisateur pour la création
+   * @returns {Promise<object>} L'abonné trouvé ou nouvellement créé
+   */
+  async findOrCreate(chatId, userData) {
+    const existingSubscriber = await this.getByChatId(chatId);
+    if (existingSubscriber) {
+      return existingSubscriber;
+    }
+    return this.createInactive(chatId, userData);
   }
 
   /**

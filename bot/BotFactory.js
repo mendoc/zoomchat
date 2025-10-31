@@ -45,7 +45,7 @@ export class BotFactory {
     const desabonnerCommand = new DesabonnerCommand(subscriberRepo, adminNotifier);
 
     // Instancier les handlers
-    const textHandler = new TextHandler(vectorSearchService);
+    const textHandler = new TextHandler(vectorSearchService, subscriberRepo);
     const callbackHandler = new CallbackHandler(subscriberRepo, adminNotifier);
 
     // Enregistrer les commandes

@@ -21,17 +21,22 @@ export class CallbackHandler {
   async handle(ctx) {
     const callbackData = ctx.callbackQuery.data;
     const chatId = ctx.chat.id;
-    const nom = ctx.from.first_name + (ctx.from.last_name ? ` ${ctx.from.last_name}` : '');
-    const username = ctx.from.username;
+    const user = ctx.from;
+    const nom = user.first_name + (user.last_name ? ` ${user.last_name}` : '');
 
     try {
       logger.info({ chatId, callbackData }, 'Callback query reçu');
 
+      // Enregistre l'utilisateur s'il n'existe pas
+      const subscriber = await this.subscriberRepo.findOrCreate(chatId, {
+        firstName: user.first_name,
+        lastName: user.last_name,
+        username: user.username,
+      });
+
       if (callbackData === 'subscribe') {
         // Vérifier si déjà abonné
-        const existingSubscriber = await this.subscriberRepo.getByChatId(chatId);
-
-        if (existingSubscriber && existingSubscriber.actif) {
+        if (subscriber && subscriber.actif) {
           await ctx.answerCallbackQuery({
             text: '✅ Vous êtes déjà abonné !',
             show_alert: false
@@ -65,7 +70,7 @@ export class CallbackHandler {
         // Notifier l'admin
         await this.adminNotifier.notifySubscription(
           'subscribe',
-          { nom, username, chatId },
+          { nom, username: user.username, chatId },
           null,
           allActive.length
         );
@@ -89,7 +94,7 @@ export class CallbackHandler {
       if (callbackData === 'subscribe') {
         await this.adminNotifier.notifySubscription(
           'subscribe',
-          { nom, username, chatId },
+          { nom, username: user.username, chatId },
           error,
           0
         );

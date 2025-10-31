@@ -18,9 +18,17 @@ export class StartCommand {
    */
   async handle(ctx) {
     const chatId = ctx.chat.id;
+    const user = ctx.from;
 
     try {
       logger.info({ chatId }, 'Commande /start reçue');
+
+      // Enregistre l'utilisateur s'il n'existe pas
+      const subscriber = await this.subscriberRepo.findOrCreate(chatId, {
+        firstName: user.first_name,
+        lastName: user.last_name,
+        username: user.username,
+      });
 
       // Construire le message
       let message = botMessages.start.greeting + '\n\n';
@@ -31,8 +39,6 @@ export class StartCommand {
       message += botMessages.start.subscribe + '\n\n';
       message += botMessages.start.tryNow;
 
-      // Vérifier si l'utilisateur est abonné
-      const subscriber = await this.subscriberRepo.getByChatId(chatId);
       const isSubscribed = subscriber && subscriber.actif;
 
       // Afficher le bouton S'abonner uniquement si pas abonné
