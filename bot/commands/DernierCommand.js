@@ -7,9 +7,11 @@ import { logger } from '../../shared/logger.js';
 export class DernierCommand {
   /**
    * @param {ParutionRepository} parutionRepo
+   * @param {SubscriberRepository} subscriberRepo
    */
-  constructor(parutionRepo) {
+  constructor(parutionRepo, subscriberRepo) {
     this.parutionRepo = parutionRepo;
+    this.subscriberRepo = subscriberRepo;
   }
 
   /**
@@ -18,9 +20,17 @@ export class DernierCommand {
    */
   async handle(ctx) {
     const chatId = ctx.chat.id;
+    const user = ctx.from;
 
     try {
       logger.info({ chatId }, 'Commande /dernier reçue');
+
+      // Enregistre l'utilisateur s'il n'existe pas
+      await this.subscriberRepo.findOrCreate(chatId, {
+        firstName: user.first_name,
+        lastName: user.last_name,
+        username: user.username,
+      });
 
       // Récupérer la dernière parution
       const parution = await this.parutionRepo.getLatest();

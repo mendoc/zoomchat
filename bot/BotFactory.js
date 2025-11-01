@@ -40,7 +40,7 @@ export class BotFactory {
     // Instancier les commandes
     const startCommand = new StartCommand(subscriberRepo);
     const aideCommand = new AideCommand(subscriberRepo);
-    const dernierCommand = new DernierCommand(parutionRepo);
+    const dernierCommand = new DernierCommand(parutionRepo, subscriberRepo);
     const abonnerCommand = new AbonnerCommand(subscriberRepo, adminNotifier);
     const desabonnerCommand = new DesabonnerCommand(subscriberRepo, adminNotifier);
 
