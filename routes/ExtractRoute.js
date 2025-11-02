@@ -66,7 +66,8 @@ export class ExtractRoute {
 
       res.json({
         success: true,
-        message: apiMessages.extraction.success,
+        message: 'Extraction terminée avec succès',
+        numero,
         stats
       });
 

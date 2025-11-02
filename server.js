@@ -99,9 +99,12 @@ logger.info('Routes communes enregistrées');
 app.use(errorMiddleware);
 
 // Démarrage du serveur selon le mode
-if (env.NODE_ENV === 'development') {
-  // Mode développement: polling
-  logger.info('Mode développement détecté');
+// En production, forcer le webhook. En développement, respecter USE_WEBHOOK (défaut: false = polling)
+const useWebhook = env.NODE_ENV === 'production' ? true : (env.USE_WEBHOOK ?? false);
+
+if (!useWebhook) {
+  // Mode polling
+  logger.info({ env: env.NODE_ENV }, 'Mode polling détecté');
 
   // Supprimer le webhook avant de démarrer le polling
   bot.api.deleteWebhook()
@@ -117,12 +120,12 @@ if (env.NODE_ENV === 'development') {
   // Démarrer quand même le serveur HTTP pour les routes /search, /extract, etc.
   const port = env.PORT || 8080;
   app.listen(port, () => {
-    logger.info({ port }, `Serveur HTTP démarré en mode développement`);
+    logger.info({ port }, `Serveur HTTP démarré en mode polling`);
   });
 
 } else {
-  // Mode production: webhook
-  logger.info('Mode production détecté');
+  // Mode webhook
+  logger.info({ env: env.NODE_ENV, forced: env.NODE_ENV === 'production' }, 'Mode webhook détecté');
 
   // Initialiser les routes spécifiques au webhook
   const webhookRoute = new WebhookRoute(bot);
@@ -138,7 +141,7 @@ if (env.NODE_ENV === 'development') {
   app.listen(port, () => {
     // Base URL du webhook
     const setWebhookUrl = env.WEBHOOK_URL.replace('/webhook', '') + '/setWebhook';
-    logger.info({ port }, `Serveur démarré en mode production (webhook)`);
+    logger.info({ port }, `Serveur démarré en mode webhook`);
     logger.info({ webhookUrl: env.WEBHOOK_URL, setWebhookUrl }, 'Webhook configuré');
   });
 }

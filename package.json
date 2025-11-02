@@ -1,12 +1,13 @@
 {
   "name": "zoomchat",
-  "version": "8.0.0",
+  "version": "9.0.0",
   "description": "Un assistant virtuel pour trouver des petites annonces dans le Zoom Hebdo",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
+    "dev": "powershell -ExecutionPolicy Bypass -File scripts/dev-with-webhook.ps1",
+    "dev:polling": "nodemon server.js",
     "deploy": "bash scripts/deploy.sh",
     "push": "git push && npm run deploy",
     "extract": "node scripts/extractor.js",

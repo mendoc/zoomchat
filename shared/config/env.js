@@ -16,6 +16,7 @@ const envSchema = z.object({
   // Environment
   NODE_ENV: z.enum(['development', 'production']).default('development'),
   PORT: z.string().default('8080'),
+  USE_WEBHOOK: z.coerce.boolean().optional(),
 });
 
 function validateEnv() {

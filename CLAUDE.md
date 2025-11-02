@@ -144,13 +144,21 @@ server.js                 # Entry point: Express app, DI container
 ### Deployment Modes
 
 - **Development** (`NODE_ENV=development`):
-  - Bot uses polling (no webhook)
-  - HTTP server runs on port 8080 for API routes
-  - Native console logging
-  - Run with `npm run dev`
+  - **Webhook mode by default** (`npm run dev`)
+    - Automatically launches ngrok if not already running
+    - Retrieves public URL from ngrok API
+    - Configures Telegram webhook automatically
+    - Sets temporary environment variables (`USE_WEBHOOK=true`, `WEBHOOK_URL=<ngrok_url>`)
+    - HTTP server handles webhook and API routes on port 8080
+    - Script: `scripts/dev-with-webhook.sh`
+  - **Polling mode (alternative)** (`npm run dev:polling`)
+    - Simple polling mode without webhook
+    - No ngrok required
+    - HTTP server runs on port 8080 for API routes only
+    - Native console logging
 
 - **Production** (GCP Cloud Run):
-  - Bot uses webhook mode
+  - Bot **always** uses webhook mode (forced, `USE_WEBHOOK` ignored)
   - Express server handles both webhook and API routes
   - Container auto-scales based on traffic
   - JSON logs for Cloud Logging
@@ -161,9 +169,20 @@ server.js                 # Entry point: Express app, DI container
 ### Development
 ```bash
 npm install           # Install dependencies
-npm run dev           # Start bot locally with auto-reload (polling mode)
+npm run dev           # Start bot with ngrok webhook (auto-configured, default mode)
+npm run dev:polling   # Start bot in polling mode (no webhook, no ngrok)
 npm start             # Start bot (checks NODE_ENV for webhook/polling)
 ```
+
+**Development with ngrok (default)**:
+- `npm run dev` automatically:
+  1. Checks if ngrok is running on port 8080
+  2. Launches ngrok if not detected
+  3. Retrieves public URL from ngrok API
+  4. Configures Telegram webhook automatically
+  5. Starts server with temporary env vars (no .env modification)
+- Requires ngrok installed: https://ngrok.com/download
+- Press Ctrl+C to stop (auto-cleanup if ngrok was launched by script)
 
 ### Database Management
 ```bash
@@ -298,6 +317,7 @@ Required in `.env` file:
 - `DATABASE_URL`: PostgreSQL connection string (format: `postgresql://user:password@host:port/database`)
 - `ADMIN_CHAT_ID`: Telegram chat ID of the admin to receive subscription notifications (optional)
 - `GEMINI_API_KEY`: Google Gemini API key for LLM ad extraction (required for PDF processing)
+- `USE_WEBHOOK`: `true` or `false` (optional, development only) - Controls bot mode in development. Defaults to `false` (polling). Set to `true` to test webhook mode locally (requires ngrok or similar). **Ignored in production** (always webhook).
 
 ## Development Notes
 
