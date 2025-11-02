@@ -181,24 +181,34 @@ node scripts/extractor.js <numero>  # Extract ads from specific parution
 
 ### Versioning & Releases
 
-**Workflow recommandé** - Commit avec versioning automatique :
+**Workflow automatique** (recommandé) - Le versioning se fait automatiquement :
 ```bash
-npm run commit:auto "feat: votre message de commit"
+git commit -m "feat: votre message"
 ```
-Cette commande analyse le message, bump la version selon le type (feat/fix/etc.), met à jour les fichiers et crée le commit.
+Un hook Git `pre-commit` s'exécute automatiquement et :
+- Analyse le message de commit (doit suivre Conventional Commits)
+- Bump la version selon le type (feat → MINOR, fix → PATCH, etc.)
+- Met à jour `package.json`, `package-lock.json` et `CHANGELOG.md`
+- Inclut ces fichiers dans le commit
 
-**Commandes alternatives** :
+**Installation du hook** :
+```bash
+npm install              # S'installe automatiquement via postinstall
+# Ou manuellement :
+npm run postinstall      # Installe le hook .git/hooks/pre-commit
+```
+
+**Alternative manuelle** - Si vous préférez contrôler le versioning :
+```bash
+npm run commit:auto "feat: votre message"  # Script qui fait tout en une commande
+```
+
+**Commandes de versioning manuel** :
 ```bash
 npm run release         # Auto-detect version bump based on conventional commits
 npm run release:major   # Force MAJOR version bump (1.0.0 → 2.0.0)
 npm run release:minor   # Force MINOR version bump (1.0.0 → 1.1.0)
 npm run release:patch   # Force PATCH version bump (1.0.0 → 1.0.1)
-npm run release:first   # First release (doesn't bump version)
-```
-
-Après un release manuel, n'oubliez pas de commit les changements :
-```bash
-git add -A && git commit -m "chore(release): vX.X.X"
 ```
 
 ### Deployment
@@ -427,12 +437,13 @@ The Express server exposes several HTTP endpoints:
   7. Mark email as read
 - **Important**: Bot token and initial chat ID are hardcoded in Code.gs
 
-### Version Management
+### Version Management (Automated)
 
 - **Conventional Commits**: The project uses [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages
 - **Semantic Versioning**: Follows [semver](https://semver.org/) (MAJOR.MINOR.PATCH)
 - **Versioning Tool**: `standard-version` for automated version bumping and CHANGELOG generation
 - **Configuration**: `.versionrc.json` contains standard-version configuration
+- **Git Hook**: Native pre-commit hook automatically bumps version on every commit
 
 **Commit Types**:
 - `feat:` → MINOR bump (new feature)
@@ -440,28 +451,22 @@ The Express server exposes several HTTP endpoints:
 - `BREAKING CHANGE:` or `!` → MAJOR bump (breaking change)
 - Other types (`docs:`, `refactor:`, etc.) → no version bump
 
-**Workflow Options**:
+**How it works**:
 
-1. **Option recommandée** - Commit automatique avec versioning:
-   ```bash
-   npm run commit:auto "feat: votre message"
-   ```
-   Cette commande fait automatiquement :
-   - Analyse le message pour déterminer le type de bump
-   - Exécute `standard-version` pour bumper la version
-   - Met à jour `package.json`, `package-lock.json` et `CHANGELOG.md`
-   - Crée le commit avec tous les fichiers
+1. You commit normally: `git commit -m "feat: nouvelle fonctionnalité"`
+2. Pre-commit hook executes automatically:
+   - Analyzes commit message to determine version bump
+   - Runs `standard-version` to update version
+   - Updates `package.json`, `package-lock.json`, and `CHANGELOG.md`
+   - Adds these files to your commit
+3. Commit is created with the updated version
 
-2. **Option manuelle** - Versioning puis commit séparément:
-   ```bash
-   npm run release              # Auto-detect version bump
-   git add -A
-   git commit -m "chore(release): vX.X.X"
-   ```
+**Hook Installation**:
+- Auto-installed via `npm install` (postinstall script)
+- Manual install: `npm run postinstall`
+- Located at: `.git/hooks/pre-commit`
 
-3. **Forcer un type de version**:
-   ```bash
-   npm run release:major        # 1.0.0 → 2.0.0
-   npm run release:minor        # 1.0.0 → 1.1.0
-   npm run release:patch        # 1.0.0 → 1.0.1
-   ```
+**Bypassing the hook** (if needed):
+```bash
+git commit --no-verify -m "message"  # Skip version bump
+```
