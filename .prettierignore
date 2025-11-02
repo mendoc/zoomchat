@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Database migrations
+migrations/
+*.sql
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+logs/
+
+# Test directories
+labo/
+
+# Config files
+package-lock.json
+.env*
+
+# Git
+.git/
+.gitignore
+
+# Documentation générée
+coverage/

@@ -71,6 +71,23 @@ npm run dev
 
 Le bot sera accessible sur Telegram. Testez avec `/start` pour voir le message de bienvenue.
 
+## 🎨 Linting & Formatage
+
+Le projet utilise **ESLint** et **Prettier** pour garantir la qualité et la cohérence du code.
+
+### Commandes disponibles
+
+```bash
+npm run lint          # Vérifier le code
+npm run lint:fix      # Corriger automatiquement les erreurs
+npm run format        # Formatter tout le code avec Prettier
+npm run format:check  # Vérifier le formatage sans modifier
+```
+
+### Intégration Git
+
+Le hook `pre-commit` vérifie automatiquement le linting avant chaque commit. Si des erreurs sont détectées, le commit est bloqué. Utilisez `npm run lint:fix` pour corriger automatiquement les problèmes.
+
 ## 🌐 Déploiement sur GCP Cloud Functions
 
 ### 1. Configuration initiale de GCP

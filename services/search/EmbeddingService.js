@@ -33,13 +33,13 @@ export class EmbeddingService {
       const response = await this.ai.models.embedContent({
         model: EMBEDDING_CONFIG.MODEL_NAME,
         contents: text,
-        taskType: EMBEDDING_CONFIG.TASK_TYPE
+        taskType: EMBEDDING_CONFIG.TASK_TYPE,
       });
 
       let embedding = response.embeddings[0].values;
 
       if (!embedding || !Array.isArray(embedding) || embedding.length === 0) {
-        throw new Error('Embedding invalide retourné par l\'API');
+        throw new Error("Embedding invalide retourné par l'API");
       }
 
       // Le modèle gemini-embedding-001 retourne 3072 dimensions
@@ -50,14 +50,17 @@ export class EmbeddingService {
       logger.debug(
         {
           textLength: text.length,
-          embeddingDim: embedding.length
+          embeddingDim: embedding.length,
         },
         'Embedding généré'
       );
 
       return embedding;
     } catch (error) {
-      logger.error({ err: error, textLength: text.length }, 'Erreur lors de la génération d\'embedding');
+      logger.error(
+        { err: error, textLength: text.length },
+        "Erreur lors de la génération d'embedding"
+      );
       throw error;
     }
   }
@@ -78,9 +81,10 @@ export class EmbeddingService {
     if (annonce.price) parts.push(`prix ${annonce.price}`);
     if (annonce.description) {
       // Limiter la description à 500 caractères pour éviter la dilution
-      const desc = annonce.description.length > 500
-        ? annonce.description.substring(0, 500) + '...'
-        : annonce.description;
+      const desc =
+        annonce.description.length > 500
+          ? `${annonce.description.substring(0, 500)}...`
+          : annonce.description;
       parts.push(desc);
     }
 
@@ -97,10 +101,7 @@ export class EmbeddingService {
     const embeddings = [];
     const delayMs = EMBEDDING_CONFIG.RATE_LIMIT_DELAY;
 
-    logger.info(
-      { count: annonces.length, delayMs },
-      'Début de génération batch d\'embeddings'
-    );
+    logger.info({ count: annonces.length, delayMs }, "Début de génération batch d'embeddings");
 
     for (let i = 0; i < annonces.length; i++) {
       const annonce = annonces[i];
@@ -116,17 +117,14 @@ export class EmbeddingService {
 
         // Pause pour respecter le rate limit
         if (i < annonces.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, delayMs));
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
         }
       } catch (error) {
-        logger.error(
-          { err: error, annonceId: annonce.id },
-          'Erreur embedding pour annonce'
-        );
+        logger.error({ err: error, annonceId: annonce.id }, 'Erreur embedding pour annonce');
         embeddings.push({
           id: annonce.id,
           embedding: null,
-          error: error.message
+          error: error.message,
         });
       }
     }
@@ -134,8 +132,8 @@ export class EmbeddingService {
     logger.info(
       {
         total: annonces.length,
-        success: embeddings.filter(e => e.embedding !== null).length,
-        failed: embeddings.filter(e => e.embedding === null).length
+        success: embeddings.filter((e) => e.embedding !== null).length,
+        failed: embeddings.filter((e) => e.embedding === null).length,
       },
       'Génération batch terminée'
     );
@@ -150,7 +148,7 @@ export class EmbeddingService {
    */
   embeddingToPostgres(embedding) {
     if (!Array.isArray(embedding)) {
-      throw new ValidationError('L\'embedding doit être un array');
+      throw new ValidationError("L'embedding doit être un array");
     }
 
     return `[${embedding.join(',')}]`;

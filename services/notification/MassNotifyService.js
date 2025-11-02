@@ -27,10 +27,7 @@ export class MassNotifyService {
    * @returns {Promise<object>} Statistiques d'envoi
    */
   async notifyAllSubscribers(parution, caption = null) {
-    logger.info(
-      { parutionId: parution.id, numero: parution.numero },
-      'Début d\'envoi en masse'
-    );
+    logger.info({ parutionId: parution.id, numero: parution.numero }, "Début d'envoi en masse");
 
     try {
       // 1. Récupérer tous les abonnés actifs
@@ -42,14 +39,11 @@ export class MassNotifyService {
           total: 0,
           success: 0,
           failed: 0,
-          subscribers: []
+          subscribers: [],
         };
       }
 
-      logger.info(
-        { count: subscribers.length },
-        'Abonnés actifs récupérés'
-      );
+      logger.info({ count: subscribers.length }, 'Abonnés actifs récupérés');
 
       // 2. Préparer la légende
       const finalCaption = caption || this.buildCaption(parution);
@@ -59,47 +53,39 @@ export class MassNotifyService {
         total: subscribers.length,
         success: 0,
         failed: 0,
-        subscribers: []
+        subscribers: [],
       };
 
       for (const subscriber of subscribers) {
         try {
-          await this.bot.api.sendDocument(
-            subscriber.chatId,
-            parution.telegramFileId,
-            {
-              caption: finalCaption,
-              parse_mode: 'Markdown'
-            }
-          );
+          await this.bot.api.sendDocument(subscriber.chatId, parution.telegramFileId, {
+            caption: finalCaption,
+            parse_mode: 'Markdown',
+          });
 
           // Enregistrer l'envoi réussi
           await this.envoiRepo.create({
             parutionId: parution.id,
             subscriberId: subscriber.id,
             statut: 'success',
-            errorMessage: null
+            errorMessage: null,
           });
 
           results.success++;
           results.subscribers.push({
             chatId: subscriber.chatId,
             nom: subscriber.nom,
-            status: 'success'
+            status: 'success',
           });
 
-          logger.debug(
-            { chatId: subscriber.chatId, nom: subscriber.nom },
-            'Envoi réussi'
-          );
-
+          logger.debug({ chatId: subscriber.chatId, nom: subscriber.nom }, 'Envoi réussi');
         } catch (error) {
           // Enregistrer l'envoi échoué
           await this.envoiRepo.create({
             parutionId: parution.id,
             subscriberId: subscriber.id,
             statut: 'failed',
-            errorMessage: error.message
+            errorMessage: error.message,
           });
 
           results.failed++;
@@ -107,18 +93,18 @@ export class MassNotifyService {
             chatId: subscriber.chatId,
             nom: subscriber.nom,
             status: 'failed',
-            error: error.message
+            error: error.message,
           });
 
           logger.error(
             { err: error, chatId: subscriber.chatId, nom: subscriber.nom },
-            'Échec d\'envoi'
+            "Échec d'envoi"
           );
         }
 
         // Pause pour respecter le rate limit Telegram (20 msg/sec max)
         if (results.total > 1) {
-          await new Promise(resolve =>
+          await new Promise((resolve) =>
             setTimeout(resolve, NOTIFICATION_CONFIG.DELAY_BETWEEN_SENDS)
           );
         }
@@ -129,18 +115,14 @@ export class MassNotifyService {
           parutionId: parution.id,
           total: results.total,
           success: results.success,
-          failed: results.failed
+          failed: results.failed,
         },
         'Envoi en masse terminé'
       );
 
       return results;
-
     } catch (error) {
-      logger.error(
-        { err: error, parutionId: parution.id },
-        'Erreur lors de l\'envoi en masse'
-      );
+      logger.error({ err: error, parutionId: parution.id }, "Erreur lors de l'envoi en masse");
       throw error;
     }
   }
@@ -157,7 +139,7 @@ export class MassNotifyService {
 
     // Tronquer si trop long
     if (caption.length > NOTIFICATION_CONFIG.MAX_CAPTION_LENGTH) {
-      caption = caption.substring(0, NOTIFICATION_CONFIG.MAX_CAPTION_LENGTH - 3) + '...';
+      caption = `${caption.substring(0, NOTIFICATION_CONFIG.MAX_CAPTION_LENGTH - 3)}...`;
     }
 
     return caption;

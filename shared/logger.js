@@ -11,7 +11,12 @@
  */
 function formatArgs(args) {
   // If first arg is an object and second is a string (Pino pattern)
-  if (args.length >= 2 && typeof args[0] === 'object' && args[0] !== null && typeof args[1] === 'string') {
+  if (
+    args.length >= 2 &&
+    typeof args[0] === 'object' &&
+    args[0] !== null &&
+    typeof args[1] === 'string'
+  ) {
     const [obj, message, ...rest] = args;
     return [message, obj, ...rest];
   }

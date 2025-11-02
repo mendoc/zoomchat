@@ -2,7 +2,6 @@ import { db } from '../db/index.js';
 import { subscribers } from '../db/index.js';
 import { eq } from 'drizzle-orm';
 import { logger } from '../shared/logger.js';
-import { NotFoundError } from '../shared/errors.js';
 
 /**
  * Repository pour gérer les opérations sur les abonnés
@@ -15,15 +14,11 @@ export class SubscriberRepository {
    */
   async getById(id) {
     try {
-      const result = await db
-        .select()
-        .from(subscribers)
-        .where(eq(subscribers.id, id))
-        .limit(1);
+      const result = await db.select().from(subscribers).where(eq(subscribers.id, id)).limit(1);
 
       return result.length > 0 ? result[0] : null;
     } catch (error) {
-      logger.error({ err: error, id }, 'Erreur lors de la récupération de l\'abonné par ID');
+      logger.error({ err: error, id }, "Erreur lors de la récupération de l'abonné par ID");
       throw error;
     }
   }
@@ -43,7 +38,10 @@ export class SubscriberRepository {
 
       return result.length > 0 ? result[0] : null;
     } catch (error) {
-      logger.error({ err: error, chatId }, 'Erreur lors de la récupération de l\'abonné par chat ID');
+      logger.error(
+        { err: error, chatId },
+        "Erreur lors de la récupération de l'abonné par chat ID"
+      );
       throw error;
     }
   }
@@ -171,7 +169,7 @@ export class SubscriberRepository {
       logger.info({ chatId, nom: data.nom }, 'Abonné mis à jour');
       return result[0];
     } catch (error) {
-      logger.error({ err: error, chatId, data }, 'Erreur lors de la mise à jour de l\'abonné');
+      logger.error({ err: error, chatId, data }, "Erreur lors de la mise à jour de l'abonné");
       throw error;
     }
   }
@@ -197,7 +195,7 @@ export class SubscriberRepository {
       logger.info({ chatId }, 'Abonnement désactivé');
       return true;
     } catch (error) {
-      logger.error({ err: error, chatId }, 'Erreur lors de la désactivation de l\'abonné');
+      logger.error({ err: error, chatId }, "Erreur lors de la désactivation de l'abonné");
       throw error;
     }
   }

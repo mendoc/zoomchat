@@ -18,7 +18,7 @@ export class WebhookRoute {
    * @param {Request} req - Requête Express
    * @param {Response} res - Réponse Express
    */
-  async handle(req, res) {
+  handle(req, res) {
     try {
       res.sendStatus(200);
       this.handler(req, res);

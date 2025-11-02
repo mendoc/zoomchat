@@ -23,14 +23,14 @@ export class AideCommand {
       logger.info({ chatId }, 'Commande /aide reçue');
 
       // Construire le message d'aide
-      let message = botMessages.help.title + '\n\n';
-      message += botMessages.help.howToSearch + '\n';
-      message += botMessages.help.searchDescription + '\n\n';
-      message += botMessages.help.examplesTitle + '\n';
-      message += botMessages.help.examples.join('\n') + '\n\n';
-      message += botMessages.help.categoriesTitle + '\n';
-      message += botMessages.help.categoriesList + '\n\n';
-      message += botMessages.help.commandsTitle + '\n';
+      let message = `${botMessages.help.title}\n\n`;
+      message += `${botMessages.help.howToSearch}\n`;
+      message += `${botMessages.help.searchDescription}\n\n`;
+      message += `${botMessages.help.examplesTitle}\n`;
+      message += `${botMessages.help.examples.join('\n')}\n\n`;
+      message += `${botMessages.help.categoriesTitle}\n`;
+      message += `${botMessages.help.categoriesList}\n\n`;
+      message += `${botMessages.help.commandsTitle}\n`;
       message += botMessages.help.commands.join('\n');
 
       // Vérifier si l'utilisateur est abonné
@@ -38,21 +38,22 @@ export class AideCommand {
       const isSubscribed = subscriber && subscriber.actif;
 
       // Afficher le bouton S'abonner uniquement si pas abonné
-      const replyMarkup = isSubscribed ? {} : {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: botMessages.callback.subscribeButton, callback_data: 'subscribe' }]
-          ]
-        }
-      };
+      const replyMarkup = isSubscribed
+        ? {}
+        : {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: botMessages.callback.subscribeButton, callback_data: 'subscribe' }],
+              ],
+            },
+          };
 
       await ctx.reply(message, {
         parse_mode: 'Markdown',
-        ...replyMarkup
+        ...replyMarkup,
       });
 
       logger.info({ chatId }, 'Message /aide envoyé');
-
     } catch (error) {
       logger.error({ err: error, chatId }, 'Erreur lors de /aide');
       await ctx.reply('❌ Une erreur est survenue. Veuillez réessayer.');

@@ -27,7 +27,9 @@
       "Bash(find:*)",
       "Bash(awk:*)",
       "Bash(curl:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(npm run lint:fix:*)",
+      "Bash(npm run lint:ci:*)"
     ],
     "deny": [],
     "ask": []

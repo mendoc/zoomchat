@@ -25,12 +25,7 @@ export class BotFactory {
    * @returns {Bot} Instance du bot configurée
    */
   static create(token, dependencies) {
-    const {
-      subscriberRepo,
-      parutionRepo,
-      vectorSearchService,
-      adminNotifier
-    } = dependencies;
+    const { subscriberRepo, parutionRepo, vectorSearchService, adminNotifier } = dependencies;
 
     // Créer l'instance du bot
     const bot = new Bot(token);
@@ -81,24 +76,25 @@ export class BotFactory {
         {
           err: err.error,
           update: ctx.update,
-          chatId: ctx.chat?.id
+          chatId: ctx.chat?.id,
         },
         'Erreur non gérée dans le bot'
       );
 
       // Tenter d'envoyer un message d'erreur à l'utilisateur
       if (ctx.chat) {
-        ctx.reply('❌ Une erreur inattendue est survenue. Veuillez réessayer.')
+        ctx
+          .reply('❌ Une erreur inattendue est survenue. Veuillez réessayer.')
           .catch((replyErr) => {
             logger.error(
               { err: replyErr },
-              'Impossible d\'envoyer le message d\'erreur à l\'utilisateur'
+              "Impossible d'envoyer le message d'erreur à l'utilisateur"
             );
           });
       }
     });
 
-    logger.info('Middleware d\'erreur enregistré');
+    logger.info("Middleware d'erreur enregistré");
 
     logger.info('Bot Telegram configuré avec succès');
 

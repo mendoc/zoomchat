@@ -1,6 +1,5 @@
 import { logger } from '../shared/logger.js';
-import { apiMessages } from '../locales/api-messages.js';
-import { NotFoundError, ValidationError } from '../shared/errors.js';
+import { NotFoundError } from '../shared/errors.js';
 
 /**
  * Route d'extraction d'une parution
@@ -38,10 +37,7 @@ export class ExtractRoute {
       // Lancer l'extraction
       const stats = await this.extractionOrchestrator.extractParution(numero, { forceExtract });
 
-      logger.info(
-        { numero, stats },
-        'Extraction terminée'
-      );
+      logger.info({ numero, stats }, 'Extraction terminée');
 
       // Mapper les stats pour la notification admin
       const notificationStats = {
@@ -53,7 +49,7 @@ export class ExtractRoute {
         annoncesSaved: stats.nombreInsereEnBase || 0,
         annoncesWithoutRef: stats.nombreSansReference || 0,
         embeddingsGenerated: stats.embeddingsGeneratedCount || 0,
-        geminiStats: stats.geminiStats
+        geminiStats: stats.geminiStats,
       };
 
       // Notifier l'admin
@@ -61,7 +57,7 @@ export class ExtractRoute {
         {
           numero,
           periode: stats.periode || 'N/A',
-          pdfUrl: stats.pdfUrl || 'N/A'
+          pdfUrl: stats.pdfUrl || 'N/A',
         },
         notificationStats,
         stats.duration
@@ -71,9 +67,8 @@ export class ExtractRoute {
         success: true,
         message: 'Extraction terminée avec succès',
         numero,
-        stats
+        stats,
       });
-
     } catch (error) {
       next(error);
     }

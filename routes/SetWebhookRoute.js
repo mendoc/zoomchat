@@ -30,15 +30,14 @@ export class SetWebhookRoute {
       res.json({
         success: true,
         message: apiMessages.webhook.set,
-        webhookUrl: this.webhookUrl
+        webhookUrl: this.webhookUrl,
       });
-
     } catch (error) {
       logger.error({ err: error }, 'Erreur lors de la configuration du webhook');
 
       res.status(500).json({
         success: false,
-        error: apiMessages.webhook.error
+        error: apiMessages.webhook.error,
       });
     }
   }

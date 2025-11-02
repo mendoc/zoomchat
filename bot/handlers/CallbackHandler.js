@@ -39,7 +39,7 @@ export class CallbackHandler {
         if (subscriber && subscriber.actif) {
           await ctx.answerCallbackQuery({
             text: '✅ Vous êtes déjà abonné !',
-            show_alert: false
+            show_alert: false,
           });
           logger.info({ chatId }, 'Déjà abonné (callback)');
           return;
@@ -48,7 +48,7 @@ export class CallbackHandler {
         // Créer ou réactiver l'abonnement
         await this.subscriberRepo.update(chatId, {
           nom,
-          telephone: null
+          telephone: null,
         });
 
         // Récupérer le nombre total d'abonnés actifs
@@ -57,12 +57,12 @@ export class CallbackHandler {
         // Répondre au callback
         await ctx.answerCallbackQuery({
           text: '✅ Abonnement confirmé !',
-          show_alert: false
+          show_alert: false,
         });
 
         // Envoyer le message de confirmation
         await ctx.reply(botMessages.subscribe.success, {
-          parse_mode: 'Markdown'
+          parse_mode: 'Markdown',
         });
 
         logger.info({ chatId, nom }, 'Abonnement créé (callback)');
@@ -78,16 +78,15 @@ export class CallbackHandler {
         // Callback inconnu
         await ctx.answerCallbackQuery({
           text: '❌ Action inconnue',
-          show_alert: false
+          show_alert: false,
         });
       }
-
     } catch (error) {
       logger.error({ err: error, chatId, callbackData }, 'Erreur lors du callback');
 
       await ctx.answerCallbackQuery({
         text: '❌ Une erreur est survenue',
-        show_alert: true
+        show_alert: true,
       });
 
       // Notifier l'admin de l'erreur si c'était un subscribe

@@ -42,23 +42,16 @@ export class DernierCommand {
       }
 
       // Préparer la légende
-      const caption = botMessages.dernier.caption(
-        parution.numero,
-        parution.periode
-      );
+      const caption = botMessages.dernier.caption(parution.numero, parution.periode);
 
       // Envoyer le document
       await ctx.replyWithDocument(parution.telegramFileId, {
         caption,
         parse_mode: 'Markdown',
-        filename: botMessages.dernier.fileName(parution.numero)
+        filename: botMessages.dernier.fileName(parution.numero),
       });
 
-      logger.info(
-        { chatId, numero: parution.numero },
-        'Dernier PDF envoyé'
-      );
-
+      logger.info({ chatId, numero: parution.numero }, 'Dernier PDF envoyé');
     } catch (error) {
       logger.error({ err: error, chatId }, 'Erreur lors de /dernier');
       await ctx.reply(botMessages.dernier.error);

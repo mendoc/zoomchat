@@ -54,10 +54,10 @@ async function generateAllEmbeddings() {
         const embeddingStr = embeddingService.embeddingToPostgres(embedding);
 
         // Sauvegarder en base
-        await pool.query(
-          `UPDATE annonces SET embedding = $1::vector WHERE id = $2`,
-          [embeddingStr, annonce.id]
-        );
+        await pool.query(`UPDATE annonces SET embedding = $1::vector WHERE id = $2`, [
+          embeddingStr,
+          annonce.id,
+        ]);
 
         successCount++;
 
@@ -73,7 +73,7 @@ async function generateAllEmbeddings() {
               successCount,
               errorCount,
               elapsed,
-              remaining
+              remaining,
             },
             'Progression'
           );
@@ -81,13 +81,13 @@ async function generateAllEmbeddings() {
 
         // Pause pour respecter le rate limit
         if (i < annonces.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, delayMs));
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
         }
       } catch (error) {
         errorCount++;
         logger.error(
           { err: error, annonceId: annonce.id, reference: annonce.reference },
-          'Erreur lors de la génération d\'embedding'
+          "Erreur lors de la génération d'embedding"
         );
         continue;
       }
@@ -101,7 +101,7 @@ async function generateAllEmbeddings() {
         errorCount,
         totalTime,
         totalMinutes: Math.round(totalTime / 60),
-        speed: Math.round(annonces.length / (totalTime / 60))
+        speed: Math.round(annonces.length / (totalTime / 60)),
       },
       'Résumé de génération'
     );
@@ -119,7 +119,7 @@ async function generateAllEmbeddings() {
       {
         total: verif.rows[0].total,
         withEmbedding: verif.rows[0].with_embedding,
-        withoutEmbedding: verif.rows[0].without_embedding
+        withoutEmbedding: verif.rows[0].without_embedding,
       },
       'Vérification finale'
     );
@@ -159,24 +159,21 @@ async function regenerateEmbeddings(annonceIds) {
         const embedding = await embeddingService.generateEmbedding(text);
         const embeddingStr = embeddingService.embeddingToPostgres(embedding);
 
-        await pool.query(
-          `UPDATE annonces SET embedding = $1::vector WHERE id = $2`,
-          [embeddingStr, annonce.id]
-        );
+        await pool.query(`UPDATE annonces SET embedding = $1::vector WHERE id = $2`, [
+          embeddingStr,
+          annonce.id,
+        ]);
 
         successCount++;
         logger.info({ annonceId: annonce.id, reference: annonce.reference }, 'Embedding régénéré');
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
       } catch (error) {
         logger.error({ err: error, annonceId: annonce.id }, 'Erreur lors de la régénération');
       }
     }
 
-    logger.info(
-      { successCount, total: annonces.length },
-      'Embeddings régénérés'
-    );
+    logger.info({ successCount, total: annonces.length }, 'Embeddings régénérés');
   } catch (error) {
     logger.error({ err: error }, 'Erreur lors de la régénération');
     throw error;
@@ -190,7 +187,7 @@ const args = process.argv.slice(2);
 
 if (args.length > 0 && args[0] === '--ids') {
   // Régénération pour des IDs spécifiques
-  const ids = args.slice(1).map(id => parseInt(id));
+  const ids = args.slice(1).map((id) => parseInt(id));
   regenerateEmbeddings(ids);
 } else {
   // Génération complète

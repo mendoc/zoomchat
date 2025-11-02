@@ -15,7 +15,7 @@ export function loggerMiddleware(req, res, next) {
       method: req.method,
       url: req.url,
       ip: req.ip,
-      userAgent: req.get('user-agent')
+      userAgent: req.get('user-agent'),
     },
     'Requête HTTP reçue'
   );
@@ -29,7 +29,7 @@ export function loggerMiddleware(req, res, next) {
         method: req.method,
         url: req.url,
         status: res.statusCode,
-        duration
+        duration,
       },
       'Requête HTTP terminée'
     );

@@ -32,13 +32,13 @@ export class EnvoiRepository {
         {
           parutionId: data.parutionId,
           subscriberId: data.subscriberId,
-          statut: data.statut
+          statut: data.statut,
         },
         'Envoi enregistré'
       );
       return result[0];
     } catch (error) {
-      logger.error({ err: error, data }, 'Erreur lors de l\'enregistrement de l\'envoi');
+      logger.error({ err: error, data }, "Erreur lors de l'enregistrement de l'envoi");
       throw error;
     }
   }
@@ -50,14 +50,14 @@ export class EnvoiRepository {
    */
   async getByParution(parutionId) {
     try {
-      const result = await db
-        .select()
-        .from(envois)
-        .where(eq(envois.parutionId, parutionId));
+      const result = await db.select().from(envois).where(eq(envois.parutionId, parutionId));
 
       return result;
     } catch (error) {
-      logger.error({ err: error, parutionId }, 'Erreur lors de la récupération des envois par parution');
+      logger.error(
+        { err: error, parutionId },
+        'Erreur lors de la récupération des envois par parution'
+      );
       throw error;
     }
   }
@@ -69,14 +69,14 @@ export class EnvoiRepository {
    */
   async getBySubscriber(subscriberId) {
     try {
-      const result = await db
-        .select()
-        .from(envois)
-        .where(eq(envois.subscriberId, subscriberId));
+      const result = await db.select().from(envois).where(eq(envois.subscriberId, subscriberId));
 
       return result;
     } catch (error) {
-      logger.error({ err: error, subscriberId }, 'Erreur lors de la récupération des envois par abonné');
+      logger.error(
+        { err: error, subscriberId },
+        'Erreur lors de la récupération des envois par abonné'
+      );
       throw error;
     }
   }

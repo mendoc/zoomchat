@@ -49,14 +49,10 @@ export class PdfService {
       logger.debug({ totalPages }, 'Nombre total de pages');
 
       // Vérifier que les pages demandées existent
-      const validPageNumbers = pageNumbers.filter(
-        num => num >= 1 && num <= totalPages
-      );
+      const validPageNumbers = pageNumbers.filter((num) => num >= 1 && num <= totalPages);
 
       if (validPageNumbers.length !== pageNumbers.length) {
-        const invalidPages = pageNumbers.filter(
-          num => num < 1 || num > totalPages
-        );
+        const invalidPages = pageNumbers.filter((num) => num < 1 || num > totalPages);
         logger.warn({ invalidPages }, 'Pages invalides ignorées');
       }
 
@@ -76,19 +72,15 @@ export class PdfService {
 
         extractedPages.push({
           pageNumber,
-          pdfBuffer: buffer
+          pdfBuffer: buffer,
         });
 
         const sizeKB = (buffer.length / 1024).toFixed(2);
         logger.debug({ pageNumber, sizeKB }, 'Page extraite');
       }
 
-      logger.info(
-        { extractedCount: extractedPages.length },
-        'Pages extraites avec succès'
-      );
+      logger.info({ extractedCount: extractedPages.length }, 'Pages extraites avec succès');
       return extractedPages;
-
     } catch (error) {
       logger.error({ err: error }, 'Erreur lors du découpage du PDF');
       throw error;
@@ -111,10 +103,7 @@ export class PdfService {
       // 2. Découper en pages
       const pages = await this.splitPdf(pdfBuffer, pageNumbers);
 
-      logger.info(
-        { pdfUrl, pagesCount: pages.length },
-        'Traitement du PDF terminé'
-      );
+      logger.info({ pdfUrl, pagesCount: pages.length }, 'Traitement du PDF terminé');
       return pages;
     } catch (error) {
       logger.error({ err: error, pdfUrl }, 'Erreur lors du traitement du PDF');

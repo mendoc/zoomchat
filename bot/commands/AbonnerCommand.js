@@ -32,7 +32,7 @@ export class AbonnerCommand {
       if (existingSubscriber && existingSubscriber.actif) {
         const date = new Date(existingSubscriber.dateAbonnement).toLocaleDateString('fr-FR');
         await ctx.reply(botMessages.subscribe.alreadySubscribed(date), {
-          parse_mode: 'Markdown'
+          parse_mode: 'Markdown',
         });
         logger.info({ chatId }, 'Déjà abonné');
         return;
@@ -41,7 +41,7 @@ export class AbonnerCommand {
       // Créer ou réactiver l'abonnement
       await this.subscriberRepo.update(chatId, {
         nom,
-        telephone: null // Le téléphone sera ajouté si nécessaire
+        telephone: null, // Le téléphone sera ajouté si nécessaire
       });
 
       // Récupérer le nombre total d'abonnés actifs
@@ -49,7 +49,7 @@ export class AbonnerCommand {
 
       // Envoyer le message de confirmation
       await ctx.reply(botMessages.subscribe.success, {
-        parse_mode: 'Markdown'
+        parse_mode: 'Markdown',
       });
 
       logger.info({ chatId, nom }, 'Abonnement créé/réactivé');
@@ -61,18 +61,12 @@ export class AbonnerCommand {
         null,
         allActive.length
       );
-
     } catch (error) {
       logger.error({ err: error, chatId }, 'Erreur lors de /abonner');
       await ctx.reply(botMessages.subscribe.error);
 
       // Notifier l'admin de l'erreur
-      await this.adminNotifier.notifySubscription(
-        'subscribe',
-        { nom, username, chatId },
-        error,
-        0
-      );
+      await this.adminNotifier.notifySubscription('subscribe', { nom, username, chatId }, error, 0);
     }
   }
 }

@@ -6,7 +6,7 @@ import { performance } from 'perf_hooks'; // Pour mesurer le temps avec précisi
 // --- CONFIGURATION ---
 const INPUT_PDF = 'page5.pdf';
 const OUTPUT_JSON = 'annonces.json';
-const MODEL_NAME = 'gemini-2.5-flash'; 
+const MODEL_NAME = 'gemini-2.5-flash';
 
 // --- TARIFICATION (USD par 1 million de tokens) ---
 // À mettre à jour si la tarification de Google change
@@ -73,21 +73,24 @@ async function main() {
           role: 'user',
           parts: [
             { text: SYSTEM_PROMPT },
-            { inlineData: { mimeType: 'application/pdf', data: pdfBase64 } }
+            { inlineData: { mimeType: 'application/pdf', data: pdfBase64 } },
           ],
         },
       ],
     });
 
-    console.log("Réponse reçue de Gemini. Traitement...");
+    console.log('Réponse reçue de Gemini. Traitement...');
     // console.log(JSON.stringify(response, null, 2));
     const candidate = response.candidates?.[0];
 
     if (!candidate || !candidate.content || !candidate.content.parts?.[0]) {
       const blockReason = response.promptFeedback?.blockReason;
-      throw new Error(blockReason ? `La requête a été bloquée. Raison : ${blockReason}` : "La réponse de l'API est invalide ou vide.");
-    }
-    
+      throw new Error(
+        blockReason
+          ? `La requête a été bloquée. Raison : ${blockReason}`
+          : "La réponse de l'API est invalide ou vide."
+      );
+
     // --- Extraction des données ---
     const rawJson = candidate.content.parts[0].text;
     const adsData = JSON.parse(rawJson);
@@ -100,7 +103,7 @@ async function main() {
     // --- Calcul et affichage des statistiques ---
     const endTime = performance.now(); // Arrêt du chronomètre
     const durationInSeconds = ((endTime - startTime) / 1000).toFixed(2);
-    
+
     // Extraction des métadonnées sur l'utilisation des tokens
     const usage = response.usageMetadata;
     const inputTokens = usage?.promptTokenCount || 0;
@@ -117,7 +120,7 @@ async function main() {
     console.log(`Tokens reçus (output) : ${outputTokens}`);
     console.log(`-----------------------------------`);
     console.log(`Coût estimé du traitement : $${totalCost.toFixed(6)} USD`);
-    console.log("-----------------------------------");
+    console.log('-----------------------------------');
 
   } catch (error) {
     console.error("Une erreur est survenue pendant l'extraction :", error);

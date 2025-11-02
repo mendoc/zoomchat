@@ -15,15 +15,11 @@ export class AnnonceRepository {
    */
   async getById(id) {
     try {
-      const result = await db
-        .select()
-        .from(annonces)
-        .where(eq(annonces.id, id))
-        .limit(1);
+      const result = await db.select().from(annonces).where(eq(annonces.id, id)).limit(1);
 
       return result.length > 0 ? result[0] : null;
     } catch (error) {
-      logger.error({ err: error, id }, 'Erreur lors de la récupération de l\'annonce par ID');
+      logger.error({ err: error, id }, "Erreur lors de la récupération de l'annonce par ID");
       throw error;
     }
   }
@@ -35,14 +31,14 @@ export class AnnonceRepository {
    */
   async getByParution(parutionId) {
     try {
-      const result = await db
-        .select()
-        .from(annonces)
-        .where(eq(annonces.parutionId, parutionId));
+      const result = await db.select().from(annonces).where(eq(annonces.parutionId, parutionId));
 
       return result;
     } catch (error) {
-      logger.error({ err: error, parutionId }, 'Erreur lors de la récupération des annonces par parution');
+      logger.error(
+        { err: error, parutionId },
+        'Erreur lors de la récupération des annonces par parution'
+      );
       throw error;
     }
   }
@@ -73,7 +69,7 @@ export class AnnonceRepository {
 
       return result.length > 0 ? result[0] : null;
     } catch (error) {
-      logger.error({ err: error, data }, 'Erreur lors de la création de\'l\'annonce');
+      logger.error({ err: error, data }, "Erreur lors de la création de'l'annonce");
       throw error;
     }
   }
@@ -124,7 +120,10 @@ export class AnnonceRepository {
       );
       return result;
     } catch (error) {
-      logger.error({ err: error, count: annoncesList.length }, 'Erreur lors de la création bulk des annonces');
+      logger.error(
+        { err: error, count: annoncesList.length },
+        'Erreur lors de la création bulk des annonces'
+      );
       throw error;
     }
   }
@@ -158,14 +157,14 @@ export class AnnonceRepository {
       const result = await db
         .select()
         .from(annonces)
-        .where(and(
-          eq(annonces.parutionId, parutionId),
-          isNull(annonces.embedding)
-        ));
+        .where(and(eq(annonces.parutionId, parutionId), isNull(annonces.embedding)));
 
       return result;
     } catch (error) {
-      logger.error({ err: error, parutionId }, 'Erreur lors de la récupération des annonces sans embedding');
+      logger.error(
+        { err: error, parutionId },
+        'Erreur lors de la récupération des annonces sans embedding'
+      );
       throw error;
     }
   }
@@ -193,7 +192,10 @@ export class AnnonceRepository {
 
       logger.info({ count: annoncesList.length }, 'Embeddings mis à jour en bulk');
     } catch (error) {
-      logger.error({ err: error, count: annoncesList.length }, 'Erreur lors de la mise à jour bulk des embeddings');
+      logger.error(
+        { err: error, count: annoncesList.length },
+        'Erreur lors de la mise à jour bulk des embeddings'
+      );
       throw error;
     }
   }
@@ -207,10 +209,7 @@ export class AnnonceRepository {
    * @returns {Promise<Array>} Résultats de la recherche
    */
   async vectorSearch(queryEmbedding, options = {}) {
-    const {
-      minScore = 0.3,
-      limit = 10,
-    } = options;
+    const { minScore = 0.3, limit = 10 } = options;
 
     const pool = getPool();
 
@@ -236,27 +235,20 @@ export class AnnonceRepository {
         LIMIT $3
       `;
 
-      const result = await pool.query(sqlQuery, [
-        JSON.stringify(queryEmbedding),
-        minScore,
-        limit,
-      ]);
+      const result = await pool.query(sqlQuery, [JSON.stringify(queryEmbedding), minScore, limit]);
 
       logger.info(
         {
           resultCount: result.rows.length,
           minScore,
-          limit
+          limit,
         },
         'Recherche vectorielle effectuée'
       );
 
       return result.rows;
     } catch (error) {
-      logger.error(
-        { err: error, options },
-        'Erreur lors de la recherche vectorielle'
-      );
+      logger.error({ err: error, options }, 'Erreur lors de la recherche vectorielle');
       throw error;
     }
   }

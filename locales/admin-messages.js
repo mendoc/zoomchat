@@ -18,15 +18,19 @@ export const adminMessages = {
       return message;
     },
     error: (errorMessage) => `⚠️ *Erreur :*\n${errorMessage}\n\n`,
-    stats: (totalActifs) => `📊 *Statistiques :*\n   • Total abonnés actifs : ${totalActifs}`
+    stats: (totalActifs) => `📊 *Statistiques :*\n   • Total abonnés actifs : ${totalActifs}`,
   },
 
   extraction: {
     title: (status) => {
-      const statusEmoji = status === 'complete_failure' ? '❌' :
-                         status === 'partial_success' ? '⚠️' : '✅';
-      const statusText = status === 'complete_failure' ? 'ÉCHEC COMPLET' :
-                        status === 'partial_success' ? 'SUCCÈS PARTIEL' : 'SUCCÈS';
+      const statusEmoji =
+        status === 'complete_failure' ? '❌' : status === 'partial_success' ? '⚠️' : '✅';
+      const statusText =
+        status === 'complete_failure'
+          ? 'ÉCHEC COMPLET'
+          : status === 'partial_success'
+            ? 'SUCCÈS PARTIEL'
+            : 'SUCCÈS';
       return `🎯 *EXTRACTION TERMINÉE* - ${statusEmoji} ${statusText}\n\n`;
     },
     parutionInfo: (numero, periode, pdfUrl) =>
@@ -56,12 +60,12 @@ export const adminMessages = {
       }
       return message;
     },
-    footer: '✨ _Notification générée automatiquement_'
+    footer: '✨ _Notification générée automatiquement_',
   },
 
   notification: {
     configMissing: '⚠️ ADMIN_CHAT_ID non configuré - notification admin ignorée',
     sent: (action) => `✅ Notification admin envoyée pour ${action}`,
-    error: (error) => `❌ Erreur lors de l'envoi de la notification admin: ${error}`
-  }
+    error: (error) => `❌ Erreur lors de l'envoi de la notification admin: ${error}`,
+  },
 };

@@ -14,11 +14,7 @@ export class ParutionRepository {
    */
   async getById(id) {
     try {
-      const result = await db
-        .select()
-        .from(parutions)
-        .where(eq(parutions.id, id))
-        .limit(1);
+      const result = await db.select().from(parutions).where(eq(parutions.id, id)).limit(1);
 
       return result.length > 0 ? result[0] : null;
     } catch (error) {
@@ -34,15 +30,14 @@ export class ParutionRepository {
    */
   async getByNumero(numero) {
     try {
-      const result = await db
-        .select()
-        .from(parutions)
-        .where(eq(parutions.numero, numero))
-        .limit(1);
+      const result = await db.select().from(parutions).where(eq(parutions.numero, numero)).limit(1);
 
       return result.length > 0 ? result[0] : null;
     } catch (error) {
-      logger.error({ err: error, numero }, 'Erreur lors de la récupération de la parution par numéro');
+      logger.error(
+        { err: error, numero },
+        'Erreur lors de la récupération de la parution par numéro'
+      );
       throw error;
     }
   }
@@ -53,11 +48,7 @@ export class ParutionRepository {
    */
   async getLatest() {
     try {
-      const result = await db
-        .select()
-        .from(parutions)
-        .orderBy(desc(parutions.createdAt))
-        .limit(1);
+      const result = await db.select().from(parutions).orderBy(desc(parutions.createdAt)).limit(1);
 
       return result.length > 0 ? result[0] : null;
     } catch (error) {

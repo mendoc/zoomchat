@@ -43,7 +43,7 @@ export class DesabonnerCommand {
 
       // Envoyer le message de confirmation
       await ctx.reply(botMessages.unsubscribe.success, {
-        parse_mode: 'Markdown'
+        parse_mode: 'Markdown',
       });
 
       logger.info({ chatId, nom }, 'Désabonnement effectué');
@@ -55,7 +55,6 @@ export class DesabonnerCommand {
         null,
         allActive.length
       );
-
     } catch (error) {
       logger.error({ err: error, chatId }, 'Erreur lors de /desabonner');
       await ctx.reply(botMessages.unsubscribe.error);

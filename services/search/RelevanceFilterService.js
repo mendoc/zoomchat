@@ -29,12 +29,16 @@ export class RelevanceFilterService {
 
     // Si pas assez de résultats, pas besoin de filtrer
     if (results.length < SEARCH_CONFIG.MIN_RESULTS_FOR_FILTERING) {
-      logger.info(`[RelevanceFilter] Seulement ${results.length} résultats, pas de filtrage nécessaire`);
+      logger.info(
+        `[RelevanceFilter] Seulement ${results.length} résultats, pas de filtrage nécessaire`
+      );
       return results;
     }
 
     try {
-      logger.info(`[RelevanceFilter] Filtrage de ${results.length} résultats pour la requête: "${query}"`);
+      logger.info(
+        `[RelevanceFilter] Filtrage de ${results.length} résultats pour la requête: "${query}"`
+      );
 
       // Construire le prompt avec les résultats
       const prompt = this.buildPrompt(query, results);
@@ -45,15 +49,13 @@ export class RelevanceFilterService {
         contents: [
           {
             role: 'user',
-            parts: [
-              { text: prompt },
-            ],
+            parts: [{ text: prompt }],
           },
         ],
         config: {
           temperature: 0.1, // Très faible pour des réponses cohérentes
           responseMimeType: 'application/json',
-        }
+        },
       });
 
       logger.info(`[RelevanceFilter] Réponse LLM complète: ${response}`);
@@ -71,7 +73,10 @@ export class RelevanceFilterService {
 
       // Valider le format de la réponse
       if (!Array.isArray(validations) || validations.length !== results.length) {
-        logger.error(`[RelevanceFilter] Format de réponse invalide du LLM. Attendu: array de ${results.length} éléments, reçu:`, validations);
+        logger.error(
+          `[RelevanceFilter] Format de réponse invalide du LLM. Attendu: array de ${results.length} éléments, reçu:`,
+          validations
+        );
         // En cas d'erreur, retourner tous les résultats (fallback sécurisé)
         return results;
       }
@@ -81,16 +86,19 @@ export class RelevanceFilterService {
         const isValidByLLM = validations[index] === true;
         const isValidByScore = result.vector_score >= 0.7;
 
-        logger.info(`[RelevanceFilter] Annonce ${index + 1} "${result.title}": LLM=${isValidByLLM}, Score=${result.vector_score?.toFixed(3)} (≥0.7: ${isValidByScore})`);
+        logger.info(
+          `[RelevanceFilter] Annonce ${index + 1} "${result.title}": LLM=${isValidByLLM}, Score=${result.vector_score?.toFixed(3)} (≥0.7: ${isValidByScore})`
+        );
 
         return isValidByLLM || isValidByScore;
       });
 
       const removedCount = results.length - filteredResults.length;
-      logger.info(`[RelevanceFilter] ${filteredResults.length} résultats pertinents conservés, ${removedCount} éliminés`);
+      logger.info(
+        `[RelevanceFilter] ${filteredResults.length} résultats pertinents conservés, ${removedCount} éliminés`
+      );
 
       return filteredResults;
-
     } catch (error) {
       logger.error('[RelevanceFilter] Erreur lors du filtrage:', error);
       // En cas d'erreur, retourner tous les résultats (fallback sécurisé)
@@ -106,13 +114,15 @@ export class RelevanceFilterService {
    */
   buildPrompt(query, results) {
     // Formater les annonces de manière concise pour le LLM
-    const annoncesFormatted = results.map((r, index) => {
-      return `${index + 1}. Titre: "${r.title || 'N/A'}"
+    const annoncesFormatted = results
+      .map(
+        (r, index) => `${index + 1}. Titre: "${r.title || 'N/A'}"
    Catégorie: ${r.category || 'N/A'} › ${r.subcategory || 'N/A'}
    Description: ${(r.description || '').substring(0, 150)}${r.description?.length > 150 ? '...' : ''}
    Localisation: ${r.location || 'N/A'}
-   Score: ${(r.vector_score || 0).toFixed(3)}`;
-    }).join('\n\n');
+   Score: ${(r.vector_score || 0).toFixed(3)}`
+      )
+      .join('\n\n');
 
     return `Tu es un assistant qui aide à filtrer les résultats de recherche d'annonces classées.
 

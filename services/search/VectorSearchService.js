@@ -40,10 +40,7 @@ export class VectorSearchService {
       limit: options.limit || SEARCH_CONFIG.DEFAULT_LIMIT,
     };
 
-    logger.info(
-      { query, searchOptions },
-      'Début de recherche vectorielle'
-    );
+    logger.info({ query, searchOptions }, 'Début de recherche vectorielle');
 
     try {
       // 1. Générer l'embedding de la requête
@@ -55,15 +52,9 @@ export class VectorSearchService {
       );
 
       // 2. Effectuer la recherche vectorielle
-      const results = await this.annonceRepo.vectorSearch(
-        queryEmbedding,
-        searchOptions
-      );
+      const results = await this.annonceRepo.vectorSearch(queryEmbedding, searchOptions);
 
-      logger.info(
-        { query, resultsCount: results.length },
-        'Recherche vectorielle effectuée'
-      );
+      logger.info({ query, resultsCount: results.length }, 'Recherche vectorielle effectuée');
 
       // 3. Filtrer les résultats non pertinents avec le LLM (si activé)
       let filteredResults = results;
@@ -76,7 +67,7 @@ export class VectorSearchService {
               query,
               originalCount: results.length,
               filteredCount: filteredResults.length,
-              removedCount: results.length - filteredResults.length
+              removedCount: results.length - filteredResults.length,
             },
             'Résultats filtrés par le service de pertinence'
           );
@@ -87,12 +78,8 @@ export class VectorSearchService {
       const formattedResults = this.formatResults(filteredResults, query);
 
       return formattedResults;
-
     } catch (error) {
-      logger.error(
-        { err: error, query },
-        'Erreur lors de la recherche vectorielle'
-      );
+      logger.error({ err: error, query }, 'Erreur lors de la recherche vectorielle');
       throw error;
     }
   }
@@ -100,10 +87,10 @@ export class VectorSearchService {
   /**
    * Formate les résultats de recherche pour l'affichage Telegram
    * @param {Array} results - Résultats bruts de la DB
-   * @param {string} query - Requête originale
+   * @param {string} _query - Requête originale (non utilisée pour l'instant)
    * @returns {Array} Résultats formatés
    */
-  formatResults(results, query) {
+  formatResults(results, _query) {
     if (!results || results.length === 0) {
       return [];
     }
@@ -133,20 +120,21 @@ export class VectorSearchService {
 
       if (result.description) {
         const maxDescLength = 300;
-        const desc = result.description.length > maxDescLength
-          ? result.description.substring(0, maxDescLength) + '...'
-          : result.description;
+        const desc =
+          result.description.length > maxDescLength
+            ? `${result.description.substring(0, maxDescLength)}...`
+            : result.description;
         message += `\n${desc}\n`;
       }
 
       if (result.contact) {
-        message += `\n📞 ${result.contact.replace("Tél.", "").trim()}`;
+        message += `\n📞 ${result.contact.replace('Tél.', '').trim()}`;
       }
 
       if (result.reference) {
         // Masquer la référence pour le moment
         // message += `\n🔖 Réf: ${result.reference}`;
-        message += "";
+        message += '';
       }
 
       // Ajouter le score pour debug (optionnel, peut être retiré en prod)

@@ -34,17 +34,14 @@ export class GeminiService {
       attempt++;
 
       try {
-        logger.info(
-          { attempt, maxRetries, pageNumber },
-          'Tentative d\'analyse LLM'
-        );
+        logger.info({ attempt, maxRetries, pageNumber }, "Tentative d'analyse LLM");
 
         const pdfBase64 = pdfBuffer.toString('base64');
 
         const result = await this.ai.models.generateContent({
           model: GEMINI_CONFIG.MODEL_NAME,
           config: {
-            responseMimeType: 'application/json'
+            responseMimeType: 'application/json',
           },
           contents: [
             {
@@ -54,12 +51,12 @@ export class GeminiService {
                 {
                   inlineData: {
                     mimeType: PDF_CONFIG.MIME_TYPE,
-                    data: pdfBase64
-                  }
-                }
-              ]
-            }
-          ]
+                    data: pdfBase64,
+                  },
+                },
+              ],
+            },
+          ],
         });
 
         const rawJson = result.candidates[0].content.parts[0].text;
@@ -71,19 +68,17 @@ export class GeminiService {
           {
             pageNumber,
             count: annonces.length,
-            attempt
+            attempt,
           },
           'Annonces extraites de la page'
         );
 
         return annonces;
-
       } catch (error) {
         lastError = error;
 
         // Vérifier si c'est une erreur de surcharge
-        const isOverloaded = error.message &&
-          error.message.toLowerCase().includes('overloaded');
+        const isOverloaded = error.message && error.message.toLowerCase().includes('overloaded');
 
         if (isOverloaded) {
           const waitTime = GEMINI_CONFIG.RETRY_DELAYS[attempt - 1] || 10000;
@@ -94,7 +89,7 @@ export class GeminiService {
           );
 
           if (attempt < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, waitTime));
+            await new Promise((resolve) => setTimeout(resolve, waitTime));
             continue;
           }
         }
@@ -103,24 +98,19 @@ export class GeminiService {
         if (attempt >= maxRetries) {
           logger.error(
             { err: error, pageNumber, maxRetries },
-            'Échec de l\'extraction après toutes les tentatives'
+            "Échec de l'extraction après toutes les tentatives"
           );
           throw error;
         }
 
         // Pour les autres erreurs, attendre quand même un peu
-        logger.warn(
-          { pageNumber, attempt },
-          'Erreur, nouvelle tentative dans 2s'
-        );
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        logger.warn({ pageNumber, attempt }, 'Erreur, nouvelle tentative dans 2s');
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }
 
     // Si on arrive ici, on a épuisé toutes les tentatives
-    throw lastError || new Error(
-      `Échec de l\'extraction après ${maxRetries} tentatives`
-    );
+    throw lastError || new Error(`Échec de l'extraction après ${maxRetries} tentatives`);
   }
 
   /**
@@ -130,10 +120,7 @@ export class GeminiService {
    * @returns {Promise<{annonces: Array, stats: object}>} Résultats avec stats
    */
   async extractAll(pages, maxConcurrent = 3) {
-    logger.info(
-      { pagesCount: pages.length, maxConcurrent },
-      'Début de l\'extraction Gemini'
-    );
+    logger.info({ pagesCount: pages.length, maxConcurrent }, "Début de l'extraction Gemini");
 
     const allAnnonces = [];
     const errors = [];
@@ -148,12 +135,9 @@ export class GeminiService {
 
         try {
           const startTime = Date.now();
-          const annonces = await this.extractFromPage(
-            page.pdfBuffer,
-            page.pageNumber
-          );
+          const annonces = await this.extractFromPage(page.pdfBuffer, page.pageNumber);
 
-          const cleanedAnnonces = annonces.map(a => this.cleanAnnonce(a));
+          const cleanedAnnonces = annonces.map((a) => this.cleanAnnonce(a));
           allAnnonces.push(...cleanedAnnonces);
 
           const duration = Date.now() - startTime;
@@ -161,14 +145,13 @@ export class GeminiService {
             pageNumber: page.pageNumber,
             annoncesCount: cleanedAnnonces.length,
             duration,
-            workerId
+            workerId,
           });
 
           logger.info(
             { pageNumber: page.pageNumber, count: cleanedAnnonces.length, duration },
             'Page traitée avec succès'
           );
-
         } catch (error) {
           logger.error(
             { err: error, pageNumber: page.pageNumber },
@@ -177,15 +160,13 @@ export class GeminiService {
 
           errors.push({
             pageNumber: page.pageNumber,
-            error: error.message
+            error: error.message,
           });
         }
 
         // Pause entre les pages pour respecter le rate limit
         if (pageIndex < pages.length) {
-          await new Promise(resolve =>
-            setTimeout(resolve, GEMINI_CONFIG.RATE_LIMIT_DELAY)
-          );
+          await new Promise((resolve) => setTimeout(resolve, GEMINI_CONFIG.RATE_LIMIT_DELAY));
         }
       }
     };
@@ -200,14 +181,14 @@ export class GeminiService {
       pagesErrors: errors.length,
       totalAnnonces: allAnnonces.length,
       errors,
-      pageDetails: pageDetails.sort((a, b) => a.pageNumber - b.pageNumber)
+      pageDetails: pageDetails.sort((a, b) => a.pageNumber - b.pageNumber),
     };
 
     logger.info(
       {
         totalPages: stats.totalPages,
         pagesSuccess: stats.pagesSuccess,
-        totalAnnonces: stats.totalAnnonces
+        totalAnnonces: stats.totalAnnonces,
       },
       'Extraction terminée'
     );

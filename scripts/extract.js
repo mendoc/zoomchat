@@ -63,20 +63,20 @@ async function main() {
 
     const adminNotifier = new AdminNotifier(bot, env.ADMIN_CHAT_ID);
 
-    console.log("Dépendances initialisées.");
+    console.log('Dépendances initialisées.');
 
     // 2. Récupérer la dernière parution
     const latestParution = await parutionRepo.getLatest();
     if (!latestParution) {
-      throw new NotFoundError("Aucune parution trouvée en base de données.");
+      throw new NotFoundError('Aucune parution trouvée en base de données.');
     }
     const { numero } = latestParution;
-    console.log({ numero }, "Parution la plus récente trouvée.");
+    console.log({ numero }, 'Parution la plus récente trouvée.');
 
     // 3. Lancer l'extraction
     console.log({ numero, forceExtract }, "Lancement de l'extraction...");
     const stats = await extractionOrchestrator.extractParution(numero, { forceExtract });
-    console.log({ numero, stats }, "Extraction terminée avec succès.");
+    console.log({ numero, stats }, 'Extraction terminée avec succès.');
 
     // 4. Notifier l'administrateur
     await adminNotifier.notifyExtraction(
@@ -99,7 +99,7 @@ async function main() {
         ...stats,
         totalDuration: `${durationInSeconds.toFixed(2)}s`,
       },
-      "Script terminé avec succès."
+      'Script terminé avec succès.'
     );
   } catch (error) {
     console.error(

@@ -33,7 +33,7 @@ export class AdminNotifier {
     try {
       const status = error ? 'error' : 'success';
       const now = new Date().toLocaleString('fr-FR', {
-        timeZone: 'Africa/Libreville'
+        timeZone: 'Africa/Libreville',
       });
 
       let message = adminMessages.subscription.title(action, status);
@@ -50,21 +50,16 @@ export class AdminNotifier {
 
       message += adminMessages.subscription.stats(totalActifs);
 
-      await this.bot.api.sendMessage(
-        this.adminChatId,
-        message,
-        { parse_mode: 'Markdown' }
-      );
+      await this.bot.api.sendMessage(this.adminChatId, message, { parse_mode: 'Markdown' });
 
       logger.info(
         { action, status, chatId: userData.chatId },
         'Notification admin envoyée pour abonnement'
       );
-
     } catch (error) {
       logger.error(
         { err: error, action, userData },
-        'Erreur lors de l\'envoi de la notification admin'
+        "Erreur lors de l'envoi de la notification admin"
       );
     }
   }
@@ -92,8 +87,10 @@ export class AdminNotifier {
       // Échec complet uniquement si :
       // - Aucune annonce extraite ET des pages ont été traitées
       // - OU toutes les pages traitées ont échoué (et au moins une page traitée)
-      if ((stats.annoncesExtracted === 0 && stats.totalPages > 0) ||
-          (stats.pagesErrors === stats.totalPages && stats.totalPages > 0)) {
+      if (
+        (stats.annoncesExtracted === 0 && stats.totalPages > 0) ||
+        (stats.pagesErrors === stats.totalPages && stats.totalPages > 0)
+      ) {
         status = 'complete_failure';
       } else if (stats.pagesErrors > 0) {
         status = 'partial_success';
@@ -126,28 +123,23 @@ export class AdminNotifier {
 
       // Calculer les catégories
       if (stats.geminiStats && stats.geminiStats.pageDetails) {
-        const categories = {};
+        const _categories = {};
         // On pourrait calculer les catégories ici si on a les données
         // Pour l'instant on skip cette partie
       }
 
       message += adminMessages.extraction.footer;
 
-      await this.bot.api.sendMessage(
-        this.adminChatId,
-        message,
-        { parse_mode: 'Markdown' }
-      );
+      await this.bot.api.sendMessage(this.adminChatId, message, { parse_mode: 'Markdown' });
 
       logger.info(
         { numero: parutionInfo.numero, status },
         'Notification admin envoyée pour extraction'
       );
-
     } catch (error) {
       logger.error(
         { err: error, parutionInfo },
-        'Erreur lors de l\'envoi de la notification admin d\'extraction'
+        "Erreur lors de l'envoi de la notification admin d'extraction"
       );
     }
   }

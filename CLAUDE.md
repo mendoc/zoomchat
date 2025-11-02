@@ -198,6 +198,44 @@ npm run extract       # Run extraction script (prompts for parution number)
 node scripts/extractor.js <numero>  # Extract ads from specific parution
 ```
 
+### Linting & Formatting
+
+Le projet utilise **ESLint** et **Prettier** pour maintenir la qualité et la cohérence du code.
+
+**Commandes disponibles** :
+```bash
+npm run lint          # Vérifier le code (affiche les erreurs/warnings)
+npm run lint:fix      # Corriger automatiquement les erreurs de linting
+npm run lint:ci       # Vérification stricte pour CI/CD (échoue si warnings)
+npm run format        # Formatter tout le code avec Prettier
+npm run format:check  # Vérifier le formatage sans modifier les fichiers
+```
+
+**Intégration avec Git** :
+- Le hook `pre-commit` exécute automatiquement `npm run lint:ci` avant chaque commit
+- Si le linting échoue, le commit est bloqué avec un message clair
+- Corrigez les erreurs avec `npm run lint:fix` ou manuellement, puis recommitez
+
+**Configuration** :
+- **ESLint** : `eslint.config.js` (flat config, ESLint 9+)
+  - Règles adaptées au style existant du projet (single quotes, 2 spaces, semicolons)
+  - Intégration avec Prettier pour éviter les conflits
+- **Prettier** : `.prettierrc.json`
+  - Configuration harmonisée avec ESLint
+  - Fichiers exclus : `.prettierignore`
+
+**Style de code appliqué** :
+- Indentation : 2 espaces
+- Guillemets : simples (`'`)
+- Semicolons : toujours présents
+- Trailing commas : seulement en multi-ligne
+- Arrow functions : préférées pour les callbacks
+
+**Approche progressive** :
+- Le code existant n'est **pas modifié automatiquement**
+- Le linting s'applique uniquement aux **nouveaux commits**
+- Vous pouvez linter/formater manuellement avec `npm run lint:fix` ou `npm run format`
+
 ### Versioning & Releases
 
 **Workflow automatique** (recommandé) - Le versioning se fait automatiquement :

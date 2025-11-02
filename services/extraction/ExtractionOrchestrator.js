@@ -12,13 +12,7 @@ export class ExtractionOrchestrator {
    * @param {AnnonceRepository} annonceRepo
    * @param {ParutionRepository} parutionRepo
    */
-  constructor(
-    pdfService,
-    geminiService,
-    embeddingService,
-    annonceRepo,
-    parutionRepo
-  ) {
+  constructor(pdfService, geminiService, embeddingService, annonceRepo, parutionRepo) {
     this.pdfService = pdfService;
     this.geminiService = geminiService;
     this.embeddingService = embeddingService;
@@ -35,7 +29,7 @@ export class ExtractionOrchestrator {
    */
   async extractParution(numero, { forceExtract = false } = {}) {
     const startTime = Date.now();
-    logger.info({ numero, forceExtract }, 'Début du pipeline d\'extraction');
+    logger.info({ numero, forceExtract }, "Début du pipeline d'extraction");
 
     try {
       // 1. Récupérer la parution depuis la DB
@@ -54,10 +48,13 @@ export class ExtractionOrchestrator {
       const existingAnnoncesCount = await this.annonceRepo.countByParutionId(parution.id);
 
       if (existingAnnoncesCount > 0 && !forceExtract) {
-        logger.info({ numero, count: existingAnnoncesCount }, 'Extraction déjà effectuée, passage à la génération des embeddings.');
+        logger.info(
+          { numero, count: existingAnnoncesCount },
+          'Extraction déjà effectuée, passage à la génération des embeddings.'
+        );
       } else {
         // 3. Extraire les annonces si nécessaire
-        logger.info({ numero }, 'Lancement de l\'extraction des annonces (PDF -> Gemini).');
+        logger.info({ numero }, "Lancement de l'extraction des annonces (PDF -> Gemini).");
 
         const pages = await this.pdfService.downloadAndSplit(parution.pdfUrl);
         logger.info({ numero, pagesCount: pages.length }, 'PDF téléchargé et découpé');
@@ -66,7 +63,7 @@ export class ExtractionOrchestrator {
         geminiStats = stats;
         totalExtrait = annonces.length;
 
-        const validAnnonces = annonces.filter(a => a.reference && a.reference.trim() !== '');
+        const validAnnonces = annonces.filter((a) => a.reference && a.reference.trim() !== '');
         nombreSansReference = totalExtrait - validAnnonces.length;
 
         logger.info(
@@ -74,22 +71,25 @@ export class ExtractionOrchestrator {
             numero,
             totalExtrait,
             nombreSansReference,
-            validAnnonces: validAnnonces.length
+            validAnnonces: validAnnonces.length,
           },
           'Annonces extraites par Gemini et filtrées'
         );
 
         if (validAnnonces.length > 0) {
-          const annoncesToSave = validAnnonces.map(a => ({
+          const annoncesToSave = validAnnonces.map((a) => ({
             ...a,
             parutionId: parution.id,
-            embedding: null
+            embedding: null,
           }));
 
           const insertedResult = await this.annonceRepo.bulkCreate(annoncesToSave);
           nombreInsereEnBase = insertedResult.length;
 
-          logger.info({ numero, count: nombreInsereEnBase }, 'Sauvegarde des annonces valides terminée.');
+          logger.info(
+            { numero, count: nombreInsereEnBase },
+            'Sauvegarde des annonces valides terminée.'
+          );
         }
       }
 
@@ -110,24 +110,29 @@ export class ExtractionOrchestrator {
           }
         );
 
-        const annoncesWithEmbeddings = annoncesToEmbed.map((annonce, i) => ({
-          id: annonce.id,
-          embedding: embeddings[i]?.embedding || null
-        })).filter(a => a.embedding);
+        const annoncesWithEmbeddings = annoncesToEmbed
+          .map((annonce, i) => ({
+            id: annonce.id,
+            embedding: embeddings[i]?.embedding || null,
+          }))
+          .filter((a) => a.embedding);
 
         embeddingsGeneratedCount = annoncesWithEmbeddings.length;
 
         if (embeddingsGeneratedCount > 0) {
-          const annoncesToUpdate = annoncesWithEmbeddings.map(a => ({
+          const annoncesToUpdate = annoncesWithEmbeddings.map((a) => ({
             ...a,
-            embedding: this.embeddingService.embeddingToPostgres(a.embedding)
+            embedding: this.embeddingService.embeddingToPostgres(a.embedding),
           }));
 
-          logger.info({ numero, count: embeddingsGeneratedCount }, 'Mise à jour des embeddings en base de données');
+          logger.info(
+            { numero, count: embeddingsGeneratedCount },
+            'Mise à jour des embeddings en base de données'
+          );
           await this.annonceRepo.bulkUpdateEmbeddings(annoncesToUpdate);
         }
       } else {
-        logger.info({ numero }, 'Aucune annonce à traiter pour la génération d\'embeddings.');
+        logger.info({ numero }, "Aucune annonce à traiter pour la génération d'embeddings.");
       }
 
       // 5. Final Stats
@@ -144,16 +149,18 @@ export class ExtractionOrchestrator {
         embeddingsGeneratedCount,
         totalAnnoncesInParution: finalAnnoncesCount,
         periode: parution.periode, // Re-add for notifier
-        pdfUrl: parution.pdfUrl,   // Re-add for notifier
-        geminiStats: geminiStats || null
+        pdfUrl: parution.pdfUrl, // Re-add for notifier
+        geminiStats: geminiStats || null,
       };
 
-      logger.info(finalStats, 'Pipeline d\'extraction terminé');
+      logger.info(finalStats, "Pipeline d'extraction terminé");
       return finalStats;
-
     } catch (error) {
       const duration = Date.now() - startTime;
-      logger.error({ err: error, numero, duration }, 'Erreur majeure dans le pipeline d\'extraction');
+      logger.error(
+        { err: error, numero, duration },
+        "Erreur majeure dans le pipeline d'extraction"
+      );
       throw error;
     }
   }

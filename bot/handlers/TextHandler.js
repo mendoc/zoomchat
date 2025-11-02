@@ -1,4 +1,3 @@
-import { InlineKeyboard } from 'grammy'; 
 import { botMessages } from '../../locales/bot-messages.js';
 import { TELEGRAM_CONFIG } from '../../shared/config/constants.js';
 import { logger } from '../../shared/logger.js';
@@ -63,14 +62,14 @@ export class TextHandler {
 
       if (results.length === 0) {
         await ctx.reply(botMessages.search.noResults(query), {
-          parse_mode: 'Markdown'
+          parse_mode: 'Markdown',
         });
         logger.info({ chatId, query }, 'Aucun résultat trouvé');
         return;
       }
 
       // 4. Envoyer les résultats
-      const header = botMessages.search.resultsTitle(query) + `\n_${results.length} annonce(s) trouvée(s)_\n\n`;
+      const header = `${botMessages.search.resultsTitle(query)}\n_${results.length} annonce(s) trouvée(s)_\n\n`;
       await ctx.reply(header, { parse_mode: 'Markdown' });
 
       for (const result of results) {
@@ -78,12 +77,15 @@ export class TextHandler {
 
         // Échapper les caractères HTML de base pour éviter les conflits
         if (messageText) {
-            messageText = messageText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          messageText = messageText
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
         }
 
         const options = {
           parse_mode: 'HTML',
-          disable_web_page_preview: true
+          disable_web_page_preview: true,
         };
 
         // Extraire le premier numéro de téléphone de l'annonce
@@ -95,7 +97,7 @@ export class TextHandler {
           if (phoneNumber.startsWith('0')) {
             phoneNumber = `+241${phoneNumber.substring(1)}`;
           }
-          
+
           const link = `<a href="tel:${phoneNumber}">${originalNumberText}</a>`;
           messageText = messageText.replace(originalNumberText, link);
         }
@@ -108,7 +110,7 @@ export class TextHandler {
         } catch (htmlError) {
           logger.warn(
             { err: htmlError, chatId, query },
-            'Échec de l\'envoi en HTML, nouvelle tentative en texte brut'
+            "Échec de l'envoi en HTML, nouvelle tentative en texte brut"
           );
           try {
             // En cas d'échec, envoyer en texte brut
@@ -118,20 +120,16 @@ export class TextHandler {
           } catch (plainTextError) {
             logger.error(
               { err: plainTextError, chatId, query },
-              'Échec de l\'envoi même en texte brut'
+              "Échec de l'envoi même en texte brut"
             );
           }
         }
 
         // Petite pause pour ne pas spammer l'API Telegram
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 300));
       }
 
-      logger.info(
-        { chatId, query, resultsCount: results.length },
-        'Résultats envoyés'
-      );
-
+      logger.info({ chatId, query, resultsCount: results.length }, 'Résultats envoyés');
     } catch (error) {
       logger.error({ err: error, chatId, query }, 'Erreur lors de la recherche en arrière-plan');
       // Envoyer un message d'erreur à l'utilisateur

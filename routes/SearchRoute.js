@@ -1,5 +1,4 @@
 import { logger } from '../shared/logger.js';
-import { apiMessages } from '../locales/api-messages.js';
 import { ValidationError } from '../shared/errors.js';
 
 /**
@@ -31,18 +30,14 @@ export class SearchRoute {
       // Effectuer la recherche
       const results = await this.vectorSearchService.search(query);
 
-      logger.info(
-        { query, resultsCount: results.length },
-        'Résultats de recherche HTTP'
-      );
+      logger.info({ query, resultsCount: results.length }, 'Résultats de recherche HTTP');
 
       res.json({
         success: true,
         query,
         count: results.length,
-        results
+        results,
       });
-
     } catch (error) {
       next(error);
     }

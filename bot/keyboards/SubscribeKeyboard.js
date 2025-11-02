@@ -6,8 +6,6 @@ import { botMessages } from '../../locales/bot-messages.js';
  */
 export function createSubscribeKeyboard() {
   return {
-    inline_keyboard: [
-      [{ text: botMessages.callback.subscribeButton, callback_data: 'subscribe' }]
-    ]
+    inline_keyboard: [[{ text: botMessages.callback.subscribeButton, callback_data: 'subscribe' }]],
   };
 }

@@ -1,11 +1,11 @@
 export const apiMessages = {
   health: {
-    ok: { status: 'ok', message: 'ZoomChat API is running' }
+    ok: { status: 'ok', message: 'ZoomChat API is running' },
   },
 
   webhook: {
     success: { success: true, message: 'Webhook configuré avec succès' },
-    error: (error) => ({ success: false, error: error.message })
+    error: (error) => ({ success: false, error: error.message }),
   },
 
   extract: {
@@ -14,9 +14,9 @@ export const apiMessages = {
       success: true,
       message: 'Extraction terminée avec succès',
       parutionNumero: numero,
-      totalAnnonces
+      totalAnnonces,
     }),
-    error: (error) => ({ success: false, error: error.message })
+    error: (error) => ({ success: false, error: error.message }),
   },
 
   search: {
@@ -25,12 +25,12 @@ export const apiMessages = {
       success: true,
       query,
       count: results.length,
-      results
+      results,
     }),
-    error: (error) => ({ error: error.message })
+    error: (error) => ({ error: error.message }),
   },
 
   notFound: { error: 'Not Found' },
 
-  serverError: (error) => ({ error: 'Internal Server Error', details: error.message })
+  serverError: (error) => ({ error: 'Internal Server Error', details: error.message }),
 };

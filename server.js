@@ -41,7 +41,7 @@ app.use(loggerMiddleware);
 const subscriberRepo = new SubscriberRepository();
 const parutionRepo = new ParutionRepository();
 const annonceRepo = new AnnonceRepository();
-const envoiRepo = new EnvoiRepository();
+const _envoiRepo = new EnvoiRepository();
 
 logger.info('Repositories initialisés');
 
@@ -80,7 +80,7 @@ const bot = BotFactory.create(env.TELEGRAM_BOT_TOKEN, {
   subscriberRepo,
   parutionRepo,
   vectorSearchService,
-  adminNotifier
+  adminNotifier,
 });
 
 // Mettre à jour adminNotifier avec le vrai bot
@@ -114,7 +114,8 @@ if (!useWebhook) {
   logger.info({ env: env.NODE_ENV }, 'Mode polling détecté');
 
   // Supprimer le webhook avant de démarrer le polling
-  bot.api.deleteWebhook()
+  bot.api
+    .deleteWebhook()
     .then(() => {
       logger.info('Webhook supprimé');
       bot.start();
@@ -129,7 +130,6 @@ if (!useWebhook) {
   app.listen(port, () => {
     logger.info({ port }, `Serveur HTTP démarré en mode polling`);
   });
-
 } else {
   // Mode webhook
   logger.info({ env: env.NODE_ENV, forced: env.NODE_ENV === 'production' }, 'Mode webhook détecté');
@@ -149,7 +149,7 @@ if (!useWebhook) {
     logger.info({ port }, `Serveur démarré en mode webhook`);
     if (env.WEBHOOK_URL) {
       // Base URL du webhook
-      const setWebhookUrl = env.WEBHOOK_URL.replace('/webhook', '') + '/setWebhook';
+      const setWebhookUrl = `${env.WEBHOOK_URL.replace('/webhook', '')}/setWebhook`;
       logger.info({ webhookUrl: env.WEBHOOK_URL, setWebhookUrl }, 'Webhook configuré');
     }
   });

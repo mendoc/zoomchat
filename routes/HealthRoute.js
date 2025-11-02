@@ -9,7 +9,7 @@ export class HealthRoute {
    * @param {Request} req - Requête Express
    * @param {Response} res - Réponse Express
    */
-  async handle(req, res) {
+  handle(req, res) {
     res.json(apiMessages.health.ok);
   }
 }
