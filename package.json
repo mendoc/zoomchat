@@ -1,6 +1,6 @@
 {
   "name": "zoomchat",
-  "version": "5.0.0",
+  "version": "6.0.0",
   "description": "Un assistant virtuel pour trouver des petites annonces dans le Zoom Hebdo",
   "main": "server.js",
   "type": "module",
@@ -19,7 +19,8 @@
     "release:minor": "standard-version --release-as minor",
     "release:patch": "standard-version --release-as patch",
     "release:first": "standard-version --first-release",
-    "commit:auto": "bash scripts/version-and-commit.sh"
+    "commit:auto": "bash scripts/version-and-commit.sh",
+    "postinstall": "bash scripts/install-git-hook.sh"
   },
   "keywords": [
     "telegram",
