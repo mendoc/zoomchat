@@ -1,4 +1,5 @@
 import express from 'express';
+import { Bot } from 'grammy';
 import { env } from './shared/config/env.js';
 import { logger } from './shared/logger.js';
 import { BotFactory } from './bot/BotFactory.js';
@@ -66,20 +67,26 @@ const vectorSearchService = new VectorSearchService(
 
 logger.info('Services initialisés');
 
-// Initialiser le bot
+// Créer une instance temporaire du bot pour AdminNotifier
+const tempBot = new Bot(env.TELEGRAM_BOT_TOKEN);
+
+// Initialiser les services de notification (nécessitent le bot)
+const adminNotifier = new AdminNotifier(tempBot, env.ADMIN_CHAT_ID);
+
+logger.info('Services de notification initialisés');
+
+// Initialiser le bot avec toutes les dépendances
 const bot = BotFactory.create(env.TELEGRAM_BOT_TOKEN, {
   subscriberRepo,
   parutionRepo,
   vectorSearchService,
-  adminNotifier: null // Sera initialisé ci-dessous
+  adminNotifier
 });
 
+// Mettre à jour adminNotifier avec le vrai bot
+adminNotifier.bot = bot;
+
 logger.info('Bot créé');
-
-// Initialiser les services de notification (nécessitent le bot)
-const adminNotifier = new AdminNotifier(bot, env.ADMIN_CHAT_ID);
-
-logger.info('Services de notification initialisés');
 
 // Initialiser les routes communes
 const healthRoute = new HealthRoute();
