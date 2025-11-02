@@ -135,7 +135,7 @@ read -p "Voulez-vous configurer le webhook Telegram maintenant? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "🔗 Configuration du webhook..."
-    curl -s "${SERVICE_URL}/setWebhook" | jq '.'
+    curl -s "${SERVICE_URL}/setWebhook"
     echo ""
 fi
 

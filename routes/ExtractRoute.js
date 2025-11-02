@@ -24,6 +24,8 @@ export class ExtractRoute {
    */
   async handle(req, res, next) {
     try {
+      const forceExtract = req.body?.forceExtract || false;
+
       const latestParution = await this.parutionRepository.getLatest();
 
       if (!latestParution) {
@@ -31,10 +33,10 @@ export class ExtractRoute {
       }
       const { numero } = latestParution;
 
-      logger.info({ numero }, 'Extraction demandée');
+      logger.info({ numero, forceExtract }, 'Extraction demandée');
 
       // Lancer l'extraction
-      const stats = await this.extractionOrchestrator.extractParution(numero);
+      const stats = await this.extractionOrchestrator.extractParution(numero, { forceExtract });
 
       logger.info(
         { numero, stats },

@@ -43,21 +43,29 @@ export class GeminiService {
 
         const result = await this.ai.models.generateContent({
           model: GEMINI_CONFIG.MODEL_NAME,
+          config: {
+            responseMimeType: 'application/json'
+          },
           contents: [
-            { text: EXTRACTION_SYSTEM_PROMPT },
             {
-              inlineData: {
-                mimeType: PDF_CONFIG.MIME_TYPE,
-                data: pdfBase64
-              }
+              role: 'user',
+              parts: [
+                { text: EXTRACTION_SYSTEM_PROMPT },
+                {
+                  inlineData: {
+                    mimeType: PDF_CONFIG.MIME_TYPE,
+                    data: pdfBase64
+                  }
+                }
+              ]
             }
           ]
         });
 
-        const text = result.text;
+        const rawJson = result.candidates[0].content.parts[0].text;
 
         // Parser le JSON retourné
-        const annonces = JSON.parse(text);
+        const annonces = JSON.parse(rawJson);
 
         logger.info(
           {

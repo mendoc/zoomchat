@@ -1,6 +1,6 @@
 import { db } from '../db/index.js';
 import { annonces } from '../db/index.js';
-import { eq } from 'drizzle-orm';
+import { eq, and, isNull, sql } from 'drizzle-orm';
 import { getPool } from '../db/connection.js';
 import { logger } from '../shared/logger.js';
 
@@ -68,11 +68,12 @@ export class AnnonceRepository {
           location: data.location,
           embedding: data.embedding || null,
         })
+        .onConflictDoNothing({ target: annonces.reference })
         .returning();
 
-      return result[0];
+      return result.length > 0 ? result[0] : null;
     } catch (error) {
-      logger.error({ err: error, data }, 'Erreur lors de la création de l\'annonce');
+      logger.error({ err: error, data }, 'Erreur lors de la création de\'l\'annonce');
       throw error;
     }
   }
@@ -106,18 +107,93 @@ export class AnnonceRepository {
               location: data.location,
               embedding: data.embedding || null,
             })
+            .onConflictDoNothing({ target: annonces.reference })
             .returning();
 
-          created.push(inserted[0]);
+          if (inserted.length > 0) {
+            created.push(inserted[0]);
+          }
         }
 
         return created;
       });
 
-      logger.info({ count: result.length }, 'Annonces créées en bulk');
+      logger.info(
+        { attempted: annoncesList.length, inserted: result.length },
+        'Annonces créées en bulk (avec gestion des conflits)'
+      );
       return result;
     } catch (error) {
       logger.error({ err: error, count: annoncesList.length }, 'Erreur lors de la création bulk des annonces');
+      throw error;
+    }
+  }
+
+  /**
+   * Compte les annonces pour une parution donnée
+   * @param {number} parutionId - ID de la parution
+   * @returns {Promise<number>} Nombre d'annonces
+   */
+  async countByParutionId(parutionId) {
+    try {
+      const result = await db
+        .select({ count: sql`count(*)` })
+        .from(annonces)
+        .where(eq(annonces.parutionId, parutionId));
+
+      return parseInt(result[0].count, 10);
+    } catch (error) {
+      logger.error({ err: error, parutionId }, 'Erreur lors du comptage des annonces par parution');
+      throw error;
+    }
+  }
+
+  /**
+   * Récupère toutes les annonces d'une parution qui n'ont pas d'embedding
+   * @param {number} parutionId - ID de la parution
+   * @returns {Promise<Array>} Liste des annonces sans embedding
+   */
+  async findWithoutEmbedding(parutionId) {
+    try {
+      const result = await db
+        .select()
+        .from(annonces)
+        .where(and(
+          eq(annonces.parutionId, parutionId),
+          isNull(annonces.embedding)
+        ));
+
+      return result;
+    } catch (error) {
+      logger.error({ err: error, parutionId }, 'Erreur lors de la récupération des annonces sans embedding');
+      throw error;
+    }
+  }
+
+  /**
+   * Met à jour les embeddings pour plusieurs annonces en une seule transaction
+   * @param {Array<{id: number, embedding: Array<number>}>} annoncesList - Liste des annonces avec leur nouvel embedding
+   * @returns {Promise<void>}
+   */
+  async bulkUpdateEmbeddings(annoncesList) {
+    if (!annoncesList || annoncesList.length === 0) {
+      return;
+    }
+
+    try {
+      await db.transaction(async (tx) => {
+        for (const data of annoncesList) {
+          if (!data.id || !data.embedding) continue;
+          await tx
+            .update(annonces)
+            .set({ embedding: data.embedding })
+            .where(eq(annonces.id, data.id));
+        }
+      });
+
+      logger.info({ count: annoncesList.length }, 'Embeddings mis à jour en bulk');
+    } catch (error) {
+      logger.error({ err: error, count: annoncesList.length }, 'Erreur lors de la mise à jour bulk des embeddings');
       throw error;
     }
   }
