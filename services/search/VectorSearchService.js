@@ -145,6 +145,7 @@ export class VectorSearchService {
         message,
         score,
         id: result.id,
+        parutionId: result.parution_id,
         category: result.category,
         title: result.title,
       };

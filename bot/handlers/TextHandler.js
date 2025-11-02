@@ -73,6 +73,14 @@ export class TextHandler {
       await ctx.reply(header, { parse_mode: 'Markdown' });
 
       for (const result of results) {
+        // Initialiser ctx.state si nécessaire
+        if (!ctx.state) {
+          ctx.state = {};
+        }
+
+        // Stocker le parution_id pour le ConversationLogger
+        ctx.state.currentParutionId = result.parutionId || null;
+
         // Envoyer le message tel quel (emoji + numéro déjà formaté par le service)
         const options = {
           disable_web_page_preview: true,

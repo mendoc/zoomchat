@@ -75,7 +75,7 @@ export class ConversationRepository {
           responseMessageId: data.responseMessageId || null,
           responseText: data.responseText || null,
           responseType: data.responseType,
-          searchResultsCount: data.searchResultsCount || null,
+          parutionId: data.parutionId || null,
           metadata: data.metadata || null,
         })
         .returning();
@@ -311,6 +311,62 @@ export class ConversationRepository {
       return result.filter((r) => r.commandName !== null);
     } catch (error) {
       logger.error({ err: error }, 'Error fetching top commands');
+      throw error;
+    }
+  }
+
+  /**
+   * Récupère les parutions les plus recherchées (apparaissant le plus dans les résultats)
+   * @param {number} [limit=10] - Nombre de résultats
+   * @returns {Promise<Array>} Liste des parutions avec leur fréquence d'apparition
+   */
+  async getMostSearchedParutions(limit = 10) {
+    try {
+      const result = await db.execute(sql`
+        SELECT
+          parution_id,
+          COUNT(*)::int AS appearance_count
+        FROM bot_responses
+        WHERE parution_id IS NOT NULL
+        GROUP BY parution_id
+        ORDER BY COUNT(*) DESC
+        LIMIT ${limit}
+      `);
+
+      return result.rows;
+    } catch (error) {
+      logger.error({ err: error }, 'Error fetching most searched parutions');
+      throw error;
+    }
+  }
+
+  /**
+   * Récupère les statistiques de recherche pour une parution spécifique
+   * @param {number} parutionId - ID de la parution
+   * @returns {Promise<Object>} Statistiques (nombre d'apparitions, dernière recherche, etc.)
+   */
+  async getParutionSearchStats(parutionId) {
+    try {
+      const result = await db.execute(sql`
+        SELECT
+          COUNT(*)::int AS total_appearances,
+          COUNT(DISTINCT chat_id)::int AS unique_users,
+          MAX(created_at) AS last_search,
+          MIN(created_at) AS first_search
+        FROM bot_responses
+        WHERE parution_id = ${parutionId}
+      `);
+
+      return (
+        result.rows[0] || {
+          total_appearances: 0,
+          unique_users: 0,
+          last_search: null,
+          first_search: null,
+        }
+      );
+    } catch (error) {
+      logger.error({ err: error, parutionId }, 'Error fetching parution search stats');
       throw error;
     }
   }

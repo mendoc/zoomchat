@@ -156,7 +156,8 @@ Le système de tracking des conversations enregistre automatiquement toutes les 
      - Champs: subscriber_id, chat_id, session_id, interaction_type, message_text, command_name, callback_data, search_query, metadata, created_at
      - Indexes: chat_id, subscriber_id, session_id, created_at, interaction_type
    - `bot_responses` - Enregistre chaque réponse du bot
-     - Champs: conversation_id, chat_id, response_message_id, response_text, response_type, search_results_count, metadata, created_at
+     - Champs: conversation_id, chat_id, response_message_id, response_text, response_type, parution_id, metadata, created_at
+     - `parution_id` (integer, FK vers parutions): ID de la parution dont est issue l'annonce retournée (une réponse = une annonce = une parution)
      - Indexes: conversation_id, chat_id, created_at, response_type
 
 2. **SessionManager** (`shared/SessionManager.js`):
@@ -176,6 +177,8 @@ Le système de tracking des conversations enregistre automatiquement toutes les 
      - `getInteractionStats()` - Statistiques par type d'interaction
      - `getTopSearchQueries()` - Requêtes les plus fréquentes
      - `getTopCommands()` - Commandes les plus utilisées
+     - `getMostSearchedParutions()` - Parutions les plus recherchées (top N par fréquence d'apparition)
+     - `getParutionSearchStats(parutionId)` - Statistiques détaillées pour une parution (apparitions, utilisateurs uniques, dates)
 
 4. **ConversationLogger** (`bot/middleware/ConversationLogger.js`):
    - Middleware grammy qui intercepte automatiquement toutes les interactions
@@ -476,7 +479,7 @@ Required in `.env` file:
   - `annonces`: parution_id, categorie, titre, reference, description, telephone, prix, localisation, embedding (vector 1536)
   - `envois`: parution_id, subscriber_id, statut, error_message, sent_at
   - `conversations`: subscriber_id, chat_id, session_id, interaction_type, message_text, command_name, callback_data, search_query, metadata, created_at
-  - `bot_responses`: conversation_id, chat_id, response_message_id, response_text, response_type, search_results_count, metadata, created_at
+  - `bot_responses`: conversation_id, chat_id, response_message_id, response_text, response_type, parution_id, metadata, created_at
 - **Soft Deletes**: Subscribers are deactivated (actif=false), not deleted
 - **Upserts**: Drizzle's `.onConflictDoUpdate()` for idempotent operations
 

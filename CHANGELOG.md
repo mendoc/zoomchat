@@ -1,4 +1,22 @@
 # Historique des versions
+### [10.0.4](https://github.com/mendoc/zoomchat/compare/v10.0.3...v10.0.4) (2025-11-02)
+
+### [10.0.5](https://github.com/mendoc/zoomchat/compare/v10.0.3...v10.0.5) (2025-11-02)
+
+### ✨ Nouvelles fonctionnalités
+
+* **tracking parutions**: ajout du tracking des parutions dans les résultats de recherche
+  - Nouvelle colonne `parution_id` (integer avec FK vers parutions) dans `bot_responses` pour lier chaque réponse à sa parution source
+  - Suppression de `search_results_count` (redondante)
+  - Enrichissement de `VectorSearchService.formatResults()` pour inclure le `parution_id` de chaque annonce
+  - Capture automatique du `parution_id` dans `TextHandler` et stockage dans `ctx.state.currentParutionId` pour chaque réponse individuelle
+  - Logging automatique du `parution_id` dans `ConversationLogger` lors de l'enregistrement des réponses
+  - Nouvelles méthodes d'analyse dans `ConversationRepository` :
+    * `getMostSearchedParutions(limit)` - Top N parutions les plus recherchées par fréquence d'apparition
+    * `getParutionSearchStats(parutionId)` - Statistiques détaillées pour une parution (apparitions, utilisateurs uniques, dates)
+  - Modèle de données simplifié : une bot_response = une annonce = une parution (relation 1:1)
+  - Permet d'analyser quelles parutions génèrent le plus d'interactions et d'identifier les contenus populaires
+
 ### [10.0.3](https://github.com/mendoc/zoomchat/compare/v10.0.2...v10.0.3) (2025-11-02)
 
 ## [10.1.0](https://github.com/mendoc/zoomchat/compare/v10.0.2...v10.1.0) (2025-11-02)

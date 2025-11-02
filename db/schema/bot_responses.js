@@ -10,6 +10,7 @@ import {
   index,
 } from 'drizzle-orm/pg-core';
 import { conversations } from './conversations.js';
+import { parutions } from './parutions.js';
 
 /**
  * Table des réponses du bot
@@ -36,8 +37,8 @@ export const botResponses = pgTable(
     responseType: varchar('response_type', { length: 50 }).notNull(),
     // Valeurs possibles: 'text', 'document', 'search_results', 'error', 'callback_answer'
 
-    // Données spécifiques selon le type de réponse
-    searchResultsCount: integer('search_results_count'), // Si response_type = 'search_results'
+    // Lien avec la parution (pour les résultats de recherche)
+    parutionId: integer('parution_id').references(() => parutions.id, { onDelete: 'set null' }),
 
     // Métadonnées flexibles (JSON)
     metadata: jsonb('metadata'),

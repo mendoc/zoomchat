@@ -1,0 +1,1 @@
+ALTER TABLE "bot_responses" ADD COLUMN "parution_ids" jsonb;

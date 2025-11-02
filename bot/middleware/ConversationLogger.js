@@ -182,6 +182,11 @@ export class ConversationLogger {
         responseType: responseType,
       };
 
+      // Ajouter le parution_id si présent (pour les résultats de recherche)
+      if (ctx.state.currentParutionId) {
+        responseData.parutionId = ctx.state.currentParutionId;
+      }
+
       // Ajouter metadata si nécessaire
       if (sentMessage) {
         responseData.metadata = {
