@@ -43,6 +43,16 @@ export class ExtractRoute {
         'Extraction terminée'
       );
 
+      // Mapper les stats pour la notification admin
+      const notificationStats = {
+        totalPages: stats.geminiStats?.totalPages || 0,
+        pagesSuccess: stats.geminiStats?.pagesSuccess || 0,
+        pagesErrors: stats.geminiStats?.pagesErrors || 0,
+        totalAnnonces: stats.nombreInsereEnBase || 0,
+        annoncesWithoutEmbeddings: 0,
+        geminiStats: stats.geminiStats
+      };
+
       // Notifier l'admin
       await this.adminNotifier.notifyExtraction(
         {
@@ -50,7 +60,7 @@ export class ExtractRoute {
           periode: stats.periode || 'N/A',
           pdfUrl: stats.pdfUrl || 'N/A'
         },
-        stats,
+        notificationStats,
         stats.duration
       );
 

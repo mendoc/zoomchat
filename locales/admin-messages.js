@@ -33,7 +33,7 @@ export const adminMessages = {
       `📰 *Parution :*\n` +
       `   • N° ${numero}\n` +
       `   • Période : ${periode}\n` +
-      `   • URL : ${pdfUrl}\n\n`,
+      `   • URL : \`${pdfUrl}\`\n\n`,
     extractionStats: (total, success, errors, duration) =>
       `📊 *Statistiques d'extraction :*\n` +
       `   • Pages traitées : ${total}\n` +
