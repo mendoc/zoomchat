@@ -10,6 +10,8 @@ import { DesabonnerCommand } from './commands/DesabonnerCommand.js';
 import { TextHandler } from './handlers/TextHandler.js';
 import { CallbackHandler } from './handlers/CallbackHandler.js';
 
+import { ConversationLogger } from './middleware/ConversationLogger.js';
+
 /**
  * Factory pour créer et configurer l'instance du bot Telegram
  */
@@ -22,15 +24,36 @@ export class BotFactory {
    * @param {ParutionRepository} dependencies.parutionRepo
    * @param {VectorSearchService} dependencies.vectorSearchService
    * @param {AdminNotifier} dependencies.adminNotifier
+   * @param {ConversationRepository} dependencies.conversationRepo
+   * @param {SessionManager} dependencies.sessionManager
    * @returns {Bot} Instance du bot configurée
    */
   static create(token, dependencies) {
-    const { subscriberRepo, parutionRepo, vectorSearchService, adminNotifier } = dependencies;
+    const {
+      subscriberRepo,
+      parutionRepo,
+      vectorSearchService,
+      adminNotifier,
+      conversationRepo,
+      sessionManager,
+    } = dependencies;
 
     // Créer l'instance du bot
     const bot = new Bot(token);
 
     logger.info('Initialisation du bot Telegram');
+
+    // Instancier le middleware de logging des conversations
+    const conversationLogger = new ConversationLogger(
+      conversationRepo,
+      subscriberRepo,
+      sessionManager
+    );
+
+    // Enregistrer le middleware AVANT les handlers (important pour intercepter toutes les interactions)
+    bot.use(conversationLogger.middleware());
+
+    logger.info('Middleware de logging des conversations enregistré');
 
     // Instancier les commandes
     const startCommand = new StartCommand(subscriberRepo);

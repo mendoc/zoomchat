@@ -1,4 +1,18 @@
 # Historique des versions
+### [10.0.3](https://github.com/mendoc/zoomchat/compare/v10.0.2...v10.0.3) (2025-11-02)
+
+## [10.1.0](https://github.com/mendoc/zoomchat/compare/v10.0.2...v10.1.0) (2025-11-02)
+
+### ✨ Nouvelles fonctionnalités
+
+* **historique conversations**: ajout d'un système complet de tracking des interactions utilisateur avec le bot
+  - Nouvelle table `conversations` pour enregistrer toutes les interactions utilisateur (commandes, recherches, callbacks)
+  - Nouvelle table `bot_responses` pour enregistrer toutes les réponses du bot
+  - `SessionManager` pour regrouper les interactions par sessions (timeout 30 minutes)
+  - `ConversationRepository` avec méthodes d'analyse et statistiques
+  - Middleware automatique `ConversationLogger` qui capture 100% des interactions sans modifier les handlers existants
+  - Permet d'analyser les habitudes utilisateurs, requêtes populaires, et améliorer le bot
+
 ### [10.0.2](https://github.com/mendoc/zoomchat/compare/v10.0.1...v10.0.2) (2025-11-02)
 
 ### [10.0.1](https://github.com/mendoc/zoomchat/compare/v10.0.0...v10.0.1) (2025-11-02)

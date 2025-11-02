@@ -29,7 +29,8 @@
       "Bash(curl:*)",
       "WebFetch(domain:github.com)",
       "Bash(npm run lint:fix:*)",
-      "Bash(npm run lint:ci:*)"
+      "Bash(npm run lint:ci:*)",
+      "Bash(timeout 15 node:*)"
     ],
     "deny": [],
     "ask": []

@@ -9,6 +9,7 @@ import { SubscriberRepository } from './models/SubscriberRepository.js';
 import { ParutionRepository } from './models/ParutionRepository.js';
 import { AnnonceRepository } from './models/AnnonceRepository.js';
 import { EnvoiRepository } from './models/EnvoiRepository.js';
+import { ConversationRepository } from './models/ConversationRepository.js';
 
 // Import services
 import { PdfService } from './services/extraction/PdfService.js';
@@ -18,6 +19,7 @@ import { EmbeddingService } from './services/search/EmbeddingService.js';
 import { VectorSearchService } from './services/search/VectorSearchService.js';
 import { RelevanceFilterService } from './services/search/RelevanceFilterService.js';
 import { AdminNotifier } from './services/notification/AdminNotifier.js';
+import { SessionManager } from './shared/SessionManager.js';
 
 // Import routes
 import { HealthRoute } from './routes/HealthRoute.js';
@@ -42,6 +44,7 @@ const subscriberRepo = new SubscriberRepository();
 const parutionRepo = new ParutionRepository();
 const annonceRepo = new AnnonceRepository();
 const _envoiRepo = new EnvoiRepository();
+const conversationRepo = new ConversationRepository();
 
 logger.info('Repositories initialisés');
 
@@ -65,6 +68,8 @@ const vectorSearchService = new VectorSearchService(
   relevanceFilterService
 );
 
+const sessionManager = new SessionManager();
+
 logger.info('Services initialisés');
 
 // Créer une instance temporaire du bot pour AdminNotifier
@@ -81,6 +86,8 @@ const bot = BotFactory.create(env.TELEGRAM_BOT_TOKEN, {
   parutionRepo,
   vectorSearchService,
   adminNotifier,
+  conversationRepo,
+  sessionManager,
 });
 
 // Mettre à jour adminNotifier avec le vrai bot
@@ -158,11 +165,13 @@ if (!useWebhook) {
 // Gestion de l'arrêt gracieux
 process.on('SIGINT', () => {
   logger.info('SIGINT reçu, arrêt du serveur...');
+  sessionManager.shutdown();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   logger.info('SIGTERM reçu, arrêt du serveur...');
+  sessionManager.shutdown();
   process.exit(0);
 });
 

@@ -56,17 +56,21 @@ server.js                 # Entry point: Express app, DI container
 │   ├── SubscriberRepository.js
 │   ├── ParutionRepository.js
 │   ├── AnnonceRepository.js
-│   └── EnvoiRepository.js
+│   ├── EnvoiRepository.js
+│   └── ConversationRepository.js
 ├── db/                   # Database configuration
 │   ├── connection.js     # Drizzle ORM + pg pool
 │   └── schema/           # Drizzle schema definitions
 ├── middleware/           # Express middleware
 │   ├── LoggerMiddleware.js
 │   └── ErrorMiddleware.js
+├── bot/middleware/       # Bot-specific middleware
+│   └── ConversationLogger.js  # Conversation tracking middleware
 ├── shared/               # Shared utilities
 │   ├── config/env.js     # Environment variables
 │   ├── logger.js         # Logger wrapper (console)
-│   └── errors.js         # Custom error classes
+│   ├── errors.js         # Custom error classes
+│   └── SessionManager.js # Session management for conversations
 └── locales/              # Internationalization
     ├── bot-messages.js   # User-facing messages
     ├── admin-messages.js # Admin notifications
@@ -140,6 +144,72 @@ server.js                 # Entry point: Express app, DI container
 - Initializes Drizzle ORM with schema
 - Exports `db` instance (Drizzle) and `getPool()` for raw queries
 - SSL enabled in production, disabled in development
+
+### Conversation History System
+
+Le système de tracking des conversations enregistre automatiquement toutes les interactions utilisateur et réponses du bot pour analyse et amélioration.
+
+**Architecture:**
+
+1. **Tables de base de données**:
+   - `conversations` - Enregistre chaque interaction utilisateur (commandes, recherches, callbacks)
+     - Champs: subscriber_id, chat_id, session_id, interaction_type, message_text, command_name, callback_data, search_query, metadata, created_at
+     - Indexes: chat_id, subscriber_id, session_id, created_at, interaction_type
+   - `bot_responses` - Enregistre chaque réponse du bot
+     - Champs: conversation_id, chat_id, response_message_id, response_text, response_type, search_results_count, metadata, created_at
+     - Indexes: conversation_id, chat_id, created_at, response_type
+
+2. **SessionManager** (`shared/SessionManager.js`):
+   - Gère les sessions de conversation avec timeout de 30 minutes
+   - Génère des UUID pour identifier les sessions
+   - Cache en mémoire avec nettoyage périodique automatique (toutes les 5 minutes)
+   - Méthodes: `getOrCreateSession()`, `getCurrentSession()`, `createNewSession()`, `endSession()`
+
+3. **ConversationRepository** (`models/ConversationRepository.js`):
+   - Méthodes de logging:
+     - `logInteraction()` - Enregistre une interaction utilisateur
+     - `logBotResponse()` - Enregistre une réponse du bot
+   - Méthodes d'analyse:
+     - `getConversationHistory()` - Récupère l'historique complet avec pagination
+     - `getRecentInteractions()` - Dernières N interactions
+     - `getSessionInteractions()` - Toutes les interactions d'une session
+     - `getInteractionStats()` - Statistiques par type d'interaction
+     - `getTopSearchQueries()` - Requêtes les plus fréquentes
+     - `getTopCommands()` - Commandes les plus utilisées
+
+4. **ConversationLogger** (`bot/middleware/ConversationLogger.js`):
+   - Middleware grammy qui intercepte automatiquement toutes les interactions
+   - **Logging utilisateur**: Détecte automatiquement le type d'interaction (command, text_query, callback_query)
+   - **Logging réponses**: Monkey-patching de `ctx.reply()`, `ctx.replyWithDocument()`, `ctx.answerCallbackQuery()`, `ctx.editMessageText()`
+   - **Non-bloquant**: Les erreurs de logging ne bloquent pas le bot
+   - Enregistré AVANT tous les handlers dans `BotFactory.js`
+
+**Intégration dans BotFactory**:
+```javascript
+// Le middleware est enregistré en premier dans la chaîne
+const conversationLogger = new ConversationLogger(conversationRepo, subscriberRepo, sessionManager);
+bot.use(conversationLogger.middleware());
+// Puis les handlers (commands, text, callbacks)
+```
+
+**Types d'interactions trackées**:
+- `command` - Commandes Telegram (/start, /aide, /dernier, etc.)
+- `text_query` - Requêtes de recherche textuelles
+- `callback_query` - Clics sur les boutons inline
+
+**Types de réponses trackées**:
+- `text` - Réponses textuelles simples
+- `document` - Envoi de documents (PDF)
+- `search_results` - Résultats de recherche
+- `error` - Messages d'erreur
+- `callback_answer` - Réponses aux callback queries
+
+**Cas d'usage**:
+- Analyser les requêtes des utilisateurs pour améliorer les prompts
+- Identifier les commandes les plus utilisées
+- Détecter les patterns de recherche
+- Mesurer l'engagement des utilisateurs par session
+- Améliorer la pertinence des résultats de recherche
 
 ### Deployment Modes
 
@@ -405,6 +475,8 @@ Required in `.env` file:
   - `parutions`: numero, periode, pdf_url, telegram_file_id, date_parution
   - `annonces`: parution_id, categorie, titre, reference, description, telephone, prix, localisation, embedding (vector 1536)
   - `envois`: parution_id, subscriber_id, statut, error_message, sent_at
+  - `conversations`: subscriber_id, chat_id, session_id, interaction_type, message_text, command_name, callback_data, search_query, metadata, created_at
+  - `bot_responses`: conversation_id, chat_id, response_message_id, response_text, response_type, search_results_count, metadata, created_at
 - **Soft Deletes**: Subscribers are deactivated (actif=false), not deleted
 - **Upserts**: Drizzle's `.onConflictDoUpdate()` for idempotent operations
 

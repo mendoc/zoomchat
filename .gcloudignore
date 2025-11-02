@@ -13,6 +13,7 @@ yarn-error.log
 # Git
 .git/
 .gitignore
+.gitattributes
 
 # IDE
 .vscode/
@@ -31,7 +32,19 @@ coverage/
 README.md
 CLAUDE.md
 LICENSE
+CHANGELOG.md
+CONTRIBUTING.md
+GEMINI.md
+LICENSE
 
 # Divers
 .DS_Store
 *.log
+
+.claude/
+appscript/
+docs/
+labo/
+scripts/
+.versionrc.json
+.prettier*

@@ -73,56 +73,15 @@ export class TextHandler {
       await ctx.reply(header, { parse_mode: 'Markdown' });
 
       for (const result of results) {
-        let messageText = result.message;
-
-        // Échapper les caractères HTML de base pour éviter les conflits
-        if (messageText) {
-          messageText = messageText
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-        }
-
+        // Envoyer le message tel quel (emoji + numéro déjà formaté par le service)
         const options = {
-          parse_mode: 'HTML',
           disable_web_page_preview: true,
         };
 
-        // Extraire le premier numéro de téléphone de l'annonce
-        const phoneMatch = messageText.match(/0[67][\d\s.-]{7,}/);
-
-        if (phoneMatch) {
-          const originalNumberText = phoneMatch[0];
-          let phoneNumber = originalNumberText.replace(/[\s.-]/g, '');
-          if (phoneNumber.startsWith('0')) {
-            phoneNumber = `+241${phoneNumber.substring(1)}`;
-          }
-
-          const link = `<a href="tel:${phoneNumber}">${originalNumberText}</a>`;
-          messageText = messageText.replace(originalNumberText, link);
-        }
-        messageText += ` <a href="https://google.com">Google</a>`;
-        messageText += ` <a href="tel:+24174213803">074 21 38 03</a>`;
-
         try {
-          // Tenter d'envoyer avec le formatage HTML
-          await ctx.reply(messageText, options);
-        } catch (htmlError) {
-          logger.warn(
-            { err: htmlError, chatId, query },
-            "Échec de l'envoi en HTML, nouvelle tentative en texte brut"
-          );
-          try {
-            // En cas d'échec, envoyer en texte brut
-            delete options.parse_mode;
-            // Le message doit être la version non échappée
-            await ctx.reply(result.message, options);
-          } catch (plainTextError) {
-            logger.error(
-              { err: plainTextError, chatId, query },
-              "Échec de l'envoi même en texte brut"
-            );
-          }
+          await ctx.reply(result.message.replaceAll('**', ''), options);
+        } catch (sendError) {
+          logger.error({ err: sendError, chatId, query }, "Échec de l'envoi du message");
         }
 
         // Petite pause pour ne pas spammer l'API Telegram
