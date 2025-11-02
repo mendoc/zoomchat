@@ -139,10 +139,12 @@ if (!useWebhook) {
 
   const port = env.PORT || 8080;
   app.listen(port, () => {
-    // Base URL du webhook
-    const setWebhookUrl = env.WEBHOOK_URL.replace('/webhook', '') + '/setWebhook';
     logger.info({ port }, `Serveur démarré en mode webhook`);
-    logger.info({ webhookUrl: env.WEBHOOK_URL, setWebhookUrl }, 'Webhook configuré');
+    if (env.WEBHOOK_URL) {
+      // Base URL du webhook
+      const setWebhookUrl = env.WEBHOOK_URL.replace('/webhook', '') + '/setWebhook';
+      logger.info({ webhookUrl: env.WEBHOOK_URL, setWebhookUrl }, 'Webhook configuré');
+    }
   });
 }
 

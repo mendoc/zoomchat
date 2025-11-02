@@ -89,7 +89,11 @@ export class AdminNotifier {
 
       // Déterminer le statut
       let status = 'success';
-      if (stats.totalAnnonces === 0 || stats.pagesErrors === stats.totalPages) {
+      // Échec complet uniquement si :
+      // - Aucune annonce extraite ET des pages ont été traitées
+      // - OU toutes les pages traitées ont échoué (et au moins une page traitée)
+      if ((stats.annoncesExtracted === 0 && stats.totalPages > 0) ||
+          (stats.pagesErrors === stats.totalPages && stats.totalPages > 0)) {
         status = 'complete_failure';
       } else if (stats.pagesErrors > 0) {
         status = 'partial_success';
@@ -110,8 +114,14 @@ export class AdminNotifier {
       );
 
       message += adminMessages.extraction.saveStats(
+        stats.annoncesExtracted || 0,
+        stats.annoncesSaved || 0,
+        stats.annoncesWithoutRef || 0
+      );
+
+      message += adminMessages.extraction.embeddingStats(
         stats.totalAnnonces,
-        stats.annoncesWithoutEmbeddings || 0
+        stats.embeddingsGenerated || 0
       );
 
       // Calculer les catégories

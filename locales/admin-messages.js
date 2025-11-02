@@ -40,10 +40,15 @@ export const adminMessages = {
       `   • ✅ Succès : ${success}\n` +
       `   • ❌ Erreurs : ${errors}\n` +
       `   • ⏱️ Durée : ${duration}s\n\n`,
-    saveStats: (saved, errors) =>
-      `💾 *Sauvegarde en base :*\n` +
-      `   • ✅ Annonces sauvegardées : ${saved}\n` +
-      `   • ❌ Erreurs de sauvegarde : ${errors}\n\n`,
+    saveStats: (extracted, saved, withoutRef) =>
+      `💾 *Résultats d'extraction :*\n` +
+      `   • 📄 Annonces extraites : ${extracted}\n` +
+      `   • ✅ Sauvegardées en base : ${saved}\n` +
+      `   • ⚠️ Sans référence (ignorées) : ${withoutRef}\n\n`,
+    embeddingStats: (total, generated) =>
+      `🔢 *Embeddings :*\n` +
+      `   • Total annonces en base : ${total}\n` +
+      `   • Nouveaux embeddings générés : ${generated}\n\n`,
     annoncesDetails: (categories) => {
       let message = `📋 *Détail par catégorie :*\n`;
       for (const [category, count] of Object.entries(categories)) {

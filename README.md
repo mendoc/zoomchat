@@ -165,6 +165,8 @@ Les abonnés sont désactivés (soft delete) plutôt que supprimés, permettant 
 ## 🔔 Notifications administrateur
 
 Si la variable d'environnement `ADMIN_CHAT_ID` est configurée, l'administrateur reçoit automatiquement des notifications Telegram pour :
+
+### Notifications d'abonnement
 - Chaque nouvel abonnement (via `/abonner` ou le bouton "S'abonner")
 - Chaque désabonnement (via `/desabonner`)
 - Les erreurs lors des opérations d'abonnement/désabonnement
@@ -176,6 +178,14 @@ Les notifications incluent :
 - Date et heure de l'action
 - Nombre total d'abonnés actifs
 - Message d'erreur en cas d'échec
+
+### Notifications d'extraction
+Lorsqu'une extraction d'annonces est effectuée (via `/extract` ou le script), l'admin reçoit un résumé détaillé :
+- **Informations de la parution** : numéro, période, URL du PDF
+- **Statistiques d'extraction** : pages traitées, succès, erreurs, durée
+- **Résultats** : annonces extraites, sauvegardées, ignorées (sans référence)
+- **Embeddings** : total en base, nouveaux générés
+- **Statut global** : succès, succès partiel, ou échec complet
 
 ## 🔄 Versionnement et releases
 

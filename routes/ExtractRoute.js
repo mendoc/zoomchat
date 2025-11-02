@@ -48,8 +48,11 @@ export class ExtractRoute {
         totalPages: stats.geminiStats?.totalPages || 0,
         pagesSuccess: stats.geminiStats?.pagesSuccess || 0,
         pagesErrors: stats.geminiStats?.pagesErrors || 0,
-        totalAnnonces: stats.nombreInsereEnBase || 0,
-        annoncesWithoutEmbeddings: 0,
+        totalAnnonces: stats.totalAnnoncesInParution || 0,
+        annoncesExtracted: stats.totalExtrait || 0,
+        annoncesSaved: stats.nombreInsereEnBase || 0,
+        annoncesWithoutRef: stats.nombreSansReference || 0,
+        embeddingsGenerated: stats.embeddingsGeneratedCount || 0,
         geminiStats: stats.geminiStats
       };
 
