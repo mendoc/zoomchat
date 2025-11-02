@@ -1,0 +1,4 @@
+# Force LF line endings for shell scripts (Husky hooks)
+.husky/pre-commit text eol=lf
+.husky/post-push text eol=lf
+scripts/*.sh text eol=lf

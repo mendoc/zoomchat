@@ -146,9 +146,15 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # Laboratoire - Données de test/expérimentation
-labo/*.json
-labo/*.pdf
-labo/*.sql
+labo/
+
+# Fichiers temporaires et de test
+GEMINI.md
+annonces.json
+log.txt
+
+# Scripts de migration temporaires
+scripts/runMigration.js
 
 # Claude Code configuration locale
 .claude/settings.local.json

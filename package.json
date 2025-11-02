@@ -1,6 +1,6 @@
 {
   "name": "zoomchat",
-  "version": "3.1.1",
+  "version": "5.0.0",
   "description": "Un assistant virtuel pour trouver des petites annonces dans le Zoom Hebdo",
   "main": "server.js",
   "type": "module",
@@ -19,7 +19,7 @@
     "release:minor": "standard-version --release-as minor",
     "release:patch": "standard-version --release-as patch",
     "release:first": "standard-version --first-release",
-    "prepare": "husky"
+    "commit:auto": "bash scripts/version-and-commit.sh"
   },
   "keywords": [
     "telegram",
@@ -39,14 +39,11 @@
     "mime": "^4.1.0",
     "pdf-lib": "^1.17.1",
     "pg": "^8.13.1",
-    "pino": "^10.1.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^24.9.1",
-    "husky": "^9.1.7",
     "nodemon": "^3.1.9",
-    "pino-pretty": "^13.1.2",
     "standard-version": "^9.5.0"
   },
   "engines": {
