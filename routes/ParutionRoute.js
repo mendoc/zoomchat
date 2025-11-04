@@ -1,5 +1,5 @@
 import { logger } from '../shared/logger.js';
-import { BadRequestError } from '../shared/errors.js';
+import { ValidationError } from '../shared/errors.js';
 
 /**
  * Route d'enregistrement d'une nouvelle parution
@@ -24,7 +24,7 @@ export class ParutionRoute {
 
       // Validation des champs requis
       if (!numero || !periode || !pdfUrl) {
-        throw new BadRequestError('Les champs numero, periode et pdfUrl sont requis');
+        throw new ValidationError('Les champs numero, periode et pdfUrl sont requis');
       }
 
       // dateParution doit être fourni par Apps Script (date de réception email)

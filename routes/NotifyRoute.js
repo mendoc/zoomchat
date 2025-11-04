@@ -1,7 +1,7 @@
 import { URL } from 'node:url';
 import { InputFile } from 'grammy';
 import { logger } from '../shared/logger.js';
-import { NotFoundError, BadRequestError } from '../shared/errors.js';
+import { NotFoundError, ValidationError } from '../shared/errors.js';
 
 /**
  * Route pour déclencher l'envoi massif d'une parution aux abonnés
@@ -31,7 +31,7 @@ export class NotifyRoute {
       const { numero } = req.body;
 
       if (!numero) {
-        throw new BadRequestError('Le champ numero est requis');
+        throw new ValidationError('Le champ numero est requis');
       }
 
       logger.info({ numero }, "Démarrage de l'envoi massif");

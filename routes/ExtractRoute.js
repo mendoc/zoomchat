@@ -1,5 +1,5 @@
 import { logger } from '../shared/logger.js';
-import { NotFoundError, BadRequestError } from '../shared/errors.js';
+import { NotFoundError, ValidationError } from '../shared/errors.js';
 
 /**
  * Route d'extraction d'une parution
@@ -29,7 +29,7 @@ export class ExtractRoute {
 
       // Validation : numero est obligatoire
       if (!numero) {
-        throw new BadRequestError('Le champ numero est requis');
+        throw new ValidationError('Le champ numero est requis');
       }
 
       // Vérifier que la parution existe
