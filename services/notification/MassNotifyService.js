@@ -1,5 +1,6 @@
 import { logger } from '../../shared/logger.js';
 import { NOTIFICATION_CONFIG } from '../../shared/config/constants.js';
+import { botMessages } from '../../locales/bot-messages.js';
 
 /**
  * Service pour l'envoi en masse de notifications aux abonnés
@@ -133,9 +134,7 @@ export class MassNotifyService {
    * @returns {string} Légende formatée
    */
   buildCaption(parution) {
-    let caption = `📰 *Zoom Hebdo N°${parution.numero}*\n\n`;
-    caption += `📅 Période : ${parution.periode}\n\n`;
-    caption += `Bonne lecture ! 📖`;
+    let caption = botMessages.massNotification.caption(parution.numero, parution.periode);
 
     // Tronquer si trop long
     if (caption.length > NOTIFICATION_CONFIG.MAX_CAPTION_LENGTH) {

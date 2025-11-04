@@ -95,4 +95,14 @@ export const botMessages = {
   callback: {
     subscribeButton: "📬 S'abonner",
   },
+
+  // Notification en masse
+  massNotification: {
+    introduction: '🆕 Un nouveau numéro du Zoom Hebdo vient d\'être publié !',
+    caption: (numero, periode) =>
+      `🆕 Un nouveau numéro du Zoom Hebdo vient d'être publié !\n\n` +
+      `📰 *Zoom Hebdo N°${numero}*\n` +
+      `📅 Période : ${periode}\n\n` +
+      `Bonne lecture ! 📖`,
+  },
 };
