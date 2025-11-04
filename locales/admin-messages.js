@@ -63,6 +63,47 @@ export const adminMessages = {
     footer: '✨ _Notification générée automatiquement_',
   },
 
+  extractionFailure: {
+    title: (isCompleteFailure) => {
+      const emoji = isCompleteFailure ? '❌' : '⚠️';
+      const text = isCompleteFailure ? 'ÉCHEC COMPLET' : 'ÉCHEC PARTIEL';
+      return `🎯 *EXTRACTION ÉCHOUÉE* - ${emoji} ${text}\n\n`;
+    },
+    parutionInfo: (numero, periode, pdfUrl) =>
+      `📰 *Parution :*\n` +
+      `   • N° ${numero}\n` +
+      `   • Période : ${periode}\n` +
+      `   • URL : \`${pdfUrl}\`\n\n`,
+    stats: (stats, duration) => {
+      if (!stats) return '';
+      const durationSec = (duration / 1000).toFixed(1);
+      return (
+        `📊 *Statistiques d'extraction :*\n` +
+        `   • Pages traitées : ${stats.totalPages || 0}\n` +
+        `   • ✅ Succès : ${stats.pagesSuccess || 0}\n` +
+        `   • ❌ Erreurs : ${stats.pagesErrors || 0}\n` +
+        `   • ⏱️ Durée : ${durationSec}s\n\n`
+      );
+    },
+    error: (errorMessage) => `⚠️ *Erreur critique :*\n\`\`\`\n${errorMessage}\n\`\`\`\n\n`,
+    footer: "⚠️ _Les abonnés ne recevront PAS le PDF tant que l'extraction n'aura pas réussi_",
+  },
+
+  massNotification: {
+    successTitle: () => `📤 *ENVOI MASSIF TERMINÉ* - ✅ SUCCÈS\n\n`,
+    failureTitle: () => `📤 *ENVOI MASSIF ÉCHOUÉ* - ❌ ÉCHEC\n\n`,
+    parutionInfo: (numero, periode) =>
+      `📰 *Parution :*\n` + `   • N° ${numero}\n` + `   • Période : ${periode}\n\n`,
+    stats: (total, success, failed) =>
+      `📊 *Statistiques d'envoi :*\n` +
+      `   • 👥 Total abonnés : ${total}\n` +
+      `   • ✅ Envois réussis : ${success}\n` +
+      `   • ❌ Envois échoués : ${failed}\n` +
+      `   • 📈 Taux de succès : ${total > 0 ? Math.round((success / total) * 100) : 0}%\n\n`,
+    error: (errorMessage) => `⚠️ *Erreur critique :*\n\`\`\`\n${errorMessage}\n\`\`\`\n\n`,
+    footer: '✨ _Notification générée automatiquement_',
+  },
+
   notification: {
     configMissing: '⚠️ ADMIN_CHAT_ID non configuré - notification admin ignorée',
     sent: (action) => `✅ Notification admin envoyée pour ${action}`,

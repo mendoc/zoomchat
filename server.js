@@ -19,6 +19,7 @@ import { EmbeddingService } from './services/search/EmbeddingService.js';
 import { VectorSearchService } from './services/search/VectorSearchService.js';
 import { RelevanceFilterService } from './services/search/RelevanceFilterService.js';
 import { AdminNotifier } from './services/notification/AdminNotifier.js';
+import { MassNotifyService } from './services/notification/MassNotifyService.js';
 import { SessionManager } from './shared/SessionManager.js';
 
 // Import routes
@@ -27,6 +28,8 @@ import { WebhookRoute } from './routes/WebhookRoute.js';
 import { SetWebhookRoute } from './routes/SetWebhookRoute.js';
 import { SearchRoute } from './routes/SearchRoute.js';
 import { ExtractRoute } from './routes/ExtractRoute.js';
+import { ParutionRoute } from './routes/ParutionRoute.js';
+import { NotifyRoute } from './routes/NotifyRoute.js';
 
 // Import middleware
 import { loggerMiddleware } from './middleware/LoggerMiddleware.js';
@@ -43,7 +46,7 @@ app.use(loggerMiddleware);
 const subscriberRepo = new SubscriberRepository();
 const parutionRepo = new ParutionRepository();
 const annonceRepo = new AnnonceRepository();
-const _envoiRepo = new EnvoiRepository();
+const envoiRepo = new EnvoiRepository();
 const conversationRepo = new ConversationRepository();
 
 logger.info('Repositories initialisés');
@@ -77,6 +80,7 @@ const tempBot = new Bot(env.TELEGRAM_BOT_TOKEN);
 
 // Initialiser les services de notification (nécessitent le bot)
 const adminNotifier = new AdminNotifier(tempBot, env.ADMIN_CHAT_ID);
+const massNotifyService = new MassNotifyService(tempBot, subscriberRepo, envoiRepo);
 
 logger.info('Services de notification initialisés');
 
@@ -90,22 +94,32 @@ const bot = BotFactory.create(env.TELEGRAM_BOT_TOKEN, {
   sessionManager,
 });
 
-// Mettre à jour adminNotifier avec le vrai bot
+// Mettre à jour adminNotifier et massNotifyService avec le vrai bot
 adminNotifier.bot = bot;
+massNotifyService.bot = bot;
 
 logger.info('Bot créé');
 
 // Initialiser les routes communes
 const healthRoute = new HealthRoute();
 const searchRoute = new SearchRoute(vectorSearchService);
-const extractRoute = new ExtractRoute(extractionOrchestrator, adminNotifier, parutionRepo);
+const parutionRoute = new ParutionRoute(parutionRepo);
+const notifyRoute = new NotifyRoute(parutionRepo, massNotifyService, adminNotifier, bot);
+const extractRoute = new ExtractRoute(
+  extractionOrchestrator,
+  adminNotifier,
+  parutionRepo,
+  notifyRoute
+);
 
 logger.info('Routes communes initialisées');
 
 // Enregistrer les routes communes
 app.get('/health', (req, res) => healthRoute.handle(req, res));
 app.get('/search', (req, res, next) => searchRoute.handle(req, res, next));
+app.post('/parution', (req, res, next) => parutionRoute.handle(req, res, next));
 app.post('/extract', (req, res, next) => extractRoute.handle(req, res, next));
+app.post('/notify', (req, res, next) => notifyRoute.handle(req, res, next));
 
 logger.info('Routes communes enregistrées');
 

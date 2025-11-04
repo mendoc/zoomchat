@@ -47,7 +47,9 @@ server.js                 # Entry point: Express app, DI container
 ├── routes/               # HTTP endpoints (REST API)
 │   ├── WebhookRoute.js   # Telegram webhook handler
 │   ├── SearchRoute.js    # GET /search
-│   └── ExtractRoute.js   # POST /extract
+│   ├── ParutionRoute.js  # POST /parution (register parution)
+│   ├── ExtractRoute.js   # POST /extract (extract ads from PDF)
+│   └── NotifyRoute.js    # POST /notify (mass notification)
 ├── services/             # Business logic layer
 │   ├── extraction/       # PDF processing & LLM extraction
 │   ├── search/           # Vector search & embeddings
@@ -542,11 +544,37 @@ The Express server exposes several HTTP endpoints:
 - Query params: `query` (required), `limit` (optional, default: 10)
 - Returns: JSON array of matching ads with similarity scores
 
+**POST /parution**
+- Registers a new parution in the database
+- Body: `{ "numero": "123", "periode": "Du 4 au 10 nov", "pdfUrl": "https://...", "dateParution": "2025-11-04T10:30:00Z" }`
+- `dateParution`: Email reception date from Google Apps Script
+- Returns: Created parution object with ID
+- Called by Google Apps Script when new publication is detected
+
 **POST /extract**
 - Triggers ad extraction pipeline for a specific parution
 - Body: `{ "numero": "123", "forceExtract": false }`
+- Requires parution to exist in DB (registered via POST /parution first)
+- Workflow:
+  1. Downloads and splits PDF pages (1, 3, 5, 6, 7)
+  2. Extracts ads using Gemini 2.5 Flash
+  3. Saves ads to database
+  4. Generates embeddings for new ads
+  5. On success: automatically triggers POST /notify for mass distribution
+  6. On failure/partial: sends admin notification, does NOT trigger /notify
 - Returns: Extraction stats (counts, duration, errors)
-- Sends admin notification on completion
+
+**POST /notify**
+- Sends PDF to all active subscribers via Telegram
+- Body: `{ "numero": "123" }`
+- Workflow:
+  1. Fetches parution from DB
+  2. Uploads PDF to Telegram (if not already uploaded)
+  3. Sends document to all active subscribers with rate limiting
+  4. Tracks delivery status in `envois` table
+  5. Sends admin notification with delivery statistics
+- Returns: Delivery stats (total, success, failed)
+- Called automatically by POST /extract on successful extraction
 
 **POST /webhook** (production only)
 - Telegram webhook endpoint
@@ -560,15 +588,18 @@ The Express server exposes several HTTP endpoints:
 
 - **Code**: `Code.gs` (not in this repo, deployed separately)
 - **Trigger**: cron-job.org calls `checkNewEmails()` every 5 minutes
-- **Workflow**:
+- **New Workflow** (fire-and-forget approach):
   1. Search Gmail for unread emails from `no-reply@zoomhebdo.com`
   2. Extract parution URL from email HTML
   3. Scrape webpage to get numero, periode, PDF URL
-  4. Fetch active subscribers from database
-  5. Send PDF to all subscribers via Telegram `sendDocument` API
-  6. Save parution to DB and track delivery in `envois` table
-  7. Mark email as read
-- **Important**: Bot token and initial chat ID are hardcoded in Code.gs
+  4. **Register parution**: Call `POST /parution` with email reception date as `dateParution`
+  5. **Trigger extraction**: Call `POST /extract` with parution numero (fire-and-forget, no wait)
+  6. Mark email as read
+- **Server-side workflow** (triggered by Apps Script):
+  - Extraction orchestrator processes PDF and extracts ads
+  - On success: automatically calls `POST /notify` to send PDF to all subscribers
+  - On failure/partial: admin is notified, subscribers do NOT receive PDF
+- **Important**: This ensures ads are indexed and searchable BEFORE users receive the PDF
 
 ### Version Management (Automated)
 

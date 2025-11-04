@@ -34,30 +34,28 @@ function checkNewEmails() {
       return;
     }
 
-    // Configuration
-    const botToken = "";
-    const chatId = "";
-    const caption = `Zoom Hebdo ${parutionData.numero} du ${parutionData.periode}`;
-    const fileId = parutionData.pdfUrl.split("id=")[1] || '';
-    const fileName = `ZOOM HEBDO ${parutionData.numero}_${fileId}.pdf`;
+    // Configuration - URL du serveur Cloud Run
+    const serverUrl = "https://zoomchat.ongoua.pro/webhook";
 
-    // 1. Envoyer le PDF en blob au chat de test pour obtenir le file_id
-    Logger.log("📤 Envoi du PDF au chat de test pour récupérer le file_id...");
-    const telegramFileId = sendParutionPDF(parutionData.pdfUrl, botToken, chatId, caption, fileName);
+    // 1. Enregistrer la parution dans la base de données
+    Logger.log("📝 Enregistrement de la parution...");
+    const dateParution = msg.getDate().toISOString(); // Date de réception de l'email
+    const parutionRegistered = registerParution(serverUrl, parutionData.numero, parutionData.periode, parutionData.pdfUrl, dateParution);
 
-    if (!telegramFileId) {
-      Logger.log("❌ Impossible de récupérer le file_id Telegram");
+    if (!parutionRegistered) {
+      Logger.log("❌ Échec de l'enregistrement de la parution");
       msg.markRead();
       return;
     }
 
-    Logger.log(`✅ File ID récupéré: ${telegramFileId}`);
+    Logger.log(`✅ Parution N°${parutionData.numero} enregistrée`);
 
-    // 2. Déclencher l'extraction des annonces
-    triggerAnnouncesExtraction();
-    
-    // 3. Appeler la Cloud Function pour l'envoi en masse
-    callMassNotifyFunction(parutionData.numero, parutionData.periode, parutionData.pdfUrl, telegramFileId, caption);
+    // 2. Déclencher l'extraction (fire-and-forget)
+    // Le serveur gérera automatiquement l'envoi massif en cas de succès
+    Logger.log("🔍 Déclenchement de l'extraction des annonces...");
+    triggerExtraction(serverUrl, parutionData.numero);
+
+    Logger.log("✅ Processus déclenché. Le serveur gérera l'extraction et l'envoi automatiquement.");
 
     // Marquer comme lu pour éviter de le retraiter
     msg.markRead();
@@ -84,162 +82,85 @@ function getParutionData(parutionUrl) {
 }
 
 /**
- * Envoie un PDF vers un bot Telegram et retourne le file_id
- * @param {string} pdfUrl - L'URL du PDF à envoyer
- * @param {string} botToken - Le token du bot Telegram
- * @param {string} chatId - L'ID du chat Telegram
- * @param {string} caption - (Optionnel) Légende du document
- * @param {string} fileName - (Optionnel) Nom du fichier
- * @return {string} File ID Telegram du document
- */
-function sendParutionPDF(pdfUrl, botToken, chatId, caption = '', fileName = '') {
-  try {
-    // Récupérer le PDF depuis l'URL
-    const response = UrlFetchApp.fetch(pdfUrl);
-    const pdfBlob = response.getBlob();
-
-    // Définir le nom du fichier
-    if (fileName) {
-      pdfBlob.setName(fileName);
-    } else {
-      pdfBlob.setName('document.pdf');
-    }
-
-    // Préparer l'URL de l'API Telegram
-    const telegramApiUrl = `https://api.telegram.org/bot${botToken}/sendDocument`;
-
-    // Préparer les données multipart/form-data
-    const payload = {
-      'chat_id': chatId,
-      'document': pdfBlob
-    };
-
-    // Ajouter la légende si elle est fournie
-    if (caption) {
-      payload['caption'] = caption;
-    }
-
-    // Options de la requête
-    const options = {
-      'method': 'post',
-      'payload': payload,
-      'muteHttpExceptions': true
-    };
-
-    // Envoyer la requête
-    const telegramResponse = UrlFetchApp.fetch(telegramApiUrl, options);
-    const result = JSON.parse(telegramResponse.getContentText());
-
-    // Vérifier le succès
-    if (result.ok) {
-      Logger.log('✅ PDF envoyé avec succès à l\'admin !');
-
-      // Extraire le file_id du document
-      const fileId = result.result.document.file_id;
-      Logger.log('📎 File ID: ' + fileId);
-
-      return fileId;
-    } else {
-      Logger.log('❌ Erreur: ' + result.description);
-      throw new Error('Erreur Telegram: ' + result.description);
-    }
-
-  } catch (error) {
-    Logger.log('❌ Erreur lors de l\'envoi: ' + error.toString());
-    throw error;
-  }
-}
-
-/**
- * Appelle la Cloud Function pour l'envoi en masse
+ * Enregistre une nouvelle parution dans la base de données
+ * @param {string} serverUrl - URL du serveur Cloud Run
  * @param {string} numero - Numéro de la parution
  * @param {string} periode - Période de la parution
  * @param {string} pdfUrl - URL du PDF
- * @param {string} telegramFileId - File ID Telegram
- * @param {string} caption - Légende du document
+ * @param {string} dateParution - Date de réception de l'email (ISO 8601)
+ * @return {boolean} true si succès, false sinon
  */
-function callMassNotifyFunction(numero, periode, pdfUrl, telegramFileId, caption) {
+function registerParution(serverUrl, numero, periode, pdfUrl, dateParution) {
   try {
-    // Configuration
-    const cloudFunctionUrl = "https://europe-west1-YOUR_PROJECT_ID.cloudfunctions.net/massNotify";
-    const secretToken = "";
+    const url = `${serverUrl}/parution`;
 
-    // Préparer les données
     const payload = {
       numero: numero,
       periode: periode,
       pdfUrl: pdfUrl,
-      telegramFileId: telegramFileId,
-      caption: caption
+      dateParution: dateParution
     };
 
-    // Options de la requête
     const options = {
       'method': 'post',
       'contentType': 'application/json',
-      'headers': {
-        'Authorization': 'Bearer ' + secretToken
-      },
       'payload': JSON.stringify(payload),
       'muteHttpExceptions': true
     };
 
-    Logger.log("📡 Appel de la Cloud Function pour l'envoi en masse...");
-
-    // Appeler la Cloud Function
-    const response = UrlFetchApp.fetch(cloudFunctionUrl, options);
+    const response = UrlFetchApp.fetch(url, options);
     const result = JSON.parse(response.getContentText());
 
     if (result.success) {
-      Logger.log(`✅ Envoi en masse réussi !`);
-      Logger.log(`📊 Statistiques: ${result.stats.success}/${result.stats.total} réussis, ${result.stats.failed} échecs`);
+      Logger.log(`✅ Parution enregistrée: ID ${result.parution.id}`);
+      return true;
     } else {
-      Logger.log(`❌ Erreur lors de l'envoi en masse: ${result.error}`);
+      Logger.log(`❌ Erreur lors de l'enregistrement: ${result.error || 'Erreur inconnue'}`);
+      return false;
     }
 
-    return result;
-
   } catch (error) {
-    Logger.log('❌ Erreur lors de l\'appel de la Cloud Function: ' + error.toString());
-    throw error;
+    Logger.log('❌ Erreur lors de l\'enregistrement de la parution: ' + error.toString());
+    return false;
   }
 }
 
 /**
  * Déclenche l'extraction des annonces depuis le PDF
- * Appelle l'endpoint /extract de Cloud Run
+ * Le serveur gérera automatiquement l'envoi massif en cas de succès
+ * @param {string} serverUrl - URL du serveur Cloud Run
+ * @param {string} numero - Numéro de la parution
  */
-function triggerAnnouncesExtraction() {
+function triggerExtraction(serverUrl, numero) {
   try {
-    // Configuration - Remplacer par l'URL réelle de Cloud Run
-    const cloudRunUrl = "https://zoomchat-YOUR_SERVICE_ID-europe-west1.run.app/extract";
+    const url = `${serverUrl}/extract`;
 
-    // Options de la requête
+    const payload = {
+      numero: numero,
+      forceExtract: false
+    };
+
     const options = {
       'method': 'post',
       'contentType': 'application/json',
+      'payload': JSON.stringify(payload),
       'muteHttpExceptions': true
     };
 
-    Logger.log("🔍 Déclenchement de l'extraction des annonces...");
+    // Appel fire-and-forget (on ne attend pas la réponse)
+    // Le serveur gérera l'extraction puis l'envoi massif automatiquement
+    UrlFetchApp.fetch(url, options);
 
-    // Appeler l'endpoint /extract
-    const response = UrlFetchApp.fetch(cloudRunUrl, options);
-    const result = JSON.parse(response.getContentText());
-
-    if (result.success) {
-      Logger.log(`✅ Extraction réussie !`);
-      Logger.log(`📊 Parution N°${result.parution.numero} - ${result.parution.periode}`);
-      Logger.log(`📝 ${result.stats.extraites} annonces extraites, ${result.stats.sauvegardees} sauvegardées`);
-    } else {
-      Logger.log(`❌ Erreur lors de l'extraction: ${result.error}`);
-    }
-
-    return result;
+    Logger.log("✅ Extraction déclenchée (fire-and-forget)");
+    Logger.log("ℹ️ Le serveur gérera automatiquement:");
+    Logger.log("   1. Extraction des annonces depuis le PDF");
+    Logger.log("   2. Génération des embeddings");
+    Logger.log("   3. Envoi massif du PDF aux abonnés (si extraction réussie)");
+    Logger.log("   4. Notifications admin (succès ou échec)");
 
   } catch (error) {
-    Logger.log('❌ Erreur lors de l\'appel de l\'extraction: ' + error.toString());
-    throw error;
+    Logger.log('❌ Erreur lors du déclenchement de l\'extraction: ' + error.toString());
+    // On ne throw pas l'erreur car c'est fire-and-forget
   }
 }
 

@@ -197,12 +197,25 @@ Les notifications incluent :
 - Message d'erreur en cas d'échec
 
 ### Notifications d'extraction
-Lorsqu'une extraction d'annonces est effectuée (via `/extract` ou le script), l'admin reçoit un résumé détaillé :
+Lorsqu'une extraction d'annonces est effectuée (via POST /extract), l'admin reçoit un résumé détaillé :
 - **Informations de la parution** : numéro, période, URL du PDF
 - **Statistiques d'extraction** : pages traitées, succès, erreurs, durée
 - **Résultats** : annonces extraites, sauvegardées, ignorées (sans référence)
 - **Embeddings** : total en base, nouveaux générés
 - **Statut global** : succès, succès partiel, ou échec complet
+
+### Notifications d'échec d'extraction
+En cas d'échec complet ou partiel de l'extraction :
+- **Statut** : échec complet (exception critique) ou partiel (erreurs sur certaines pages)
+- **Informations de la parution** : numéro, période, URL du PDF
+- **Statistiques** : pages traitées, succès, erreurs (si disponible)
+- **Message d'erreur** : détails de l'exception critique
+- **Avertissement** : les abonnés ne recevront PAS le PDF tant que l'extraction n'aura pas réussi
+
+### Notifications d'envoi massif
+Après l'extraction réussie, le système envoie automatiquement le PDF à tous les abonnés. L'admin reçoit :
+- **Succès** : statistiques d'envoi (total abonnés, envois réussis, échoués, taux de succès)
+- **Échec** : message d'erreur si l'envoi massif échoue (ex: upload du PDF à Telegram)
 
 ## 🔄 Versionnement et releases
 
