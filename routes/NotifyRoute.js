@@ -48,8 +48,15 @@ export class NotifyRoute {
         logger.info({ numero, pdfUrl: parution.pdfUrl }, 'Upload du PDF à Telegram');
 
         try {
-          // Télécharger le PDF depuis l'URL et l'uploader à Telegram
-          const inputFile = new InputFile(new URL(parution.pdfUrl));
+          // Extraire l'ID depuis l'URL (ex: https://www.zoomhebdo.com/raw/vue_fil?id=600 -> 600)
+          const urlParams = new URL(parution.pdfUrl).searchParams;
+          const pdfId = urlParams.get('id') || 'unknown';
+
+          // Construire le nom du fichier : ZOOM-HEBDO-{numero}-{id}.pdf
+          const filename = `ZOOM-HEBDO-${numero}-${pdfId}.pdf`;
+
+          // Télécharger le PDF depuis l'URL et l'uploader à Telegram avec le nom personnalisé
+          const inputFile = new InputFile(new URL(parution.pdfUrl), filename);
 
           // Envoyer le PDF à l'admin pour obtenir le file_id
           // (Telegram donne le file_id après l'upload)

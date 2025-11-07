@@ -98,7 +98,7 @@ export const botMessages = {
 
   // Notification en masse
   massNotification: {
-    introduction: '🆕 Un nouveau numéro du Zoom Hebdo vient d\'être publié !',
+    introduction: "🆕 Un nouveau numéro du Zoom Hebdo vient d'être publié !",
     caption: (numero, periode) =>
       `🆕 Un nouveau numéro du Zoom Hebdo vient d'être publié !\n\n` +
       `📰 *Zoom Hebdo N°${numero}*\n` +

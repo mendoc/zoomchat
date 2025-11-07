@@ -1,4 +1,12 @@
 # Historique des versions
+## [10.1.0](https://github.com/mendoc/zoomchat/compare/v10.0.6...v10.1.0) (2025-11-07)
+
+
+### ✨ Nouvelles fonctionnalités
+
+* ajout d'un message introductif lors de l'envoi en masse du PDF ([f36e3f0](https://github.com/mendoc/zoomchat/commit/f36e3f07984749804bacefe71d8c1cac8c38b3cc))
+* migration pour permettre telegram_file_id NULL ([4ffc0fd](https://github.com/mendoc/zoomchat/commit/4ffc0fd398cbe3938fb8397daa01cde7e8c70a1b))
+
 ### [10.0.7](https://github.com/mendoc/zoomchat/compare/v10.0.6...v10.0.7) (2025-11-07)
 
 ### [10.0.6](https://github.com/mendoc/zoomchat/compare/v10.0.5...v10.0.6) (2025-11-04)
