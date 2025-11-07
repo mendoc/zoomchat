@@ -1,4 +1,6 @@
 # Historique des versions
+### [10.1.7](https://github.com/mendoc/zoomchat/compare/v10.1.6...v10.1.7) (2025-11-07)
+
 ### [10.1.6](https://github.com/mendoc/zoomchat/compare/v10.1.5...v10.1.6) (2025-11-07)
 
 ### [10.1.5](https://github.com/mendoc/zoomchat/compare/v10.1.4...v10.1.5) (2025-11-07)
