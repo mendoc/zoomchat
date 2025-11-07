@@ -73,7 +73,11 @@ export class ExtractRoute {
           };
 
           // Vérifier s'il y a eu des erreurs d'extraction (échec complet ou partiel)
-          const hasErrors = stats.geminiStats?.pagesErrors > 0 || stats.totalExtrait === 0;
+          // Erreur si : pages avec erreurs OU (pages traitées mais rien extrait)
+          // PAS d'erreur si : extraction déjà faite (totalPages === 0, skip)
+          const hasErrors =
+            stats.geminiStats?.pagesErrors > 0 ||
+            (stats.geminiStats?.totalPages > 0 && stats.totalExtrait === 0);
 
           if (hasErrors) {
             // Notifier l'admin de l'échec/erreur partielle
@@ -84,12 +88,23 @@ export class ExtractRoute {
               stats.duration
             );
           } else {
-            // Notifier l'admin du succès de l'extraction
-            await this.adminNotifier.notifyExtraction(
-              parutionInfo,
-              notificationStats,
-              stats.duration
-            );
+            // Vérifier si une action a été effectuée (extraction ou embeddings)
+            const wasAlreadyExtracted =
+              stats.geminiStats?.totalPages === 0 && stats.embeddingsGeneratedCount === 0;
+
+            if (!wasAlreadyExtracted) {
+              // Notifier l'admin seulement si quelque chose a été fait
+              await this.adminNotifier.notifyExtraction(
+                parutionInfo,
+                notificationStats,
+                stats.duration
+              );
+            } else {
+              logger.info(
+                { numero },
+                'Extraction déjà effectuée, aucune action nécessaire (pas de notification admin)'
+              );
+            }
 
             // Déclencher l'envoi massif du PDF aux abonnés
             logger.info({ numero }, "Déclenchement de l'envoi massif après extraction réussie");

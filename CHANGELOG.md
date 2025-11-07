@@ -1,11 +1,38 @@
 # Historique des versions
+### [10.1.9](https://github.com/mendoc/zoomchat/compare/v10.1.8...v10.1.9) (2025-11-07)
+
 ### [10.1.8](https://github.com/mendoc/zoomchat/compare/v10.1.7...v10.1.8) (2025-11-07)
 
+
+### 🐛 Corrections de bugs
+
+* **extraction**: amélioration de la détection d'erreurs lors de l'extraction
+  - Distinction entre "extraction déjà faite" (succès) et "échec d'extraction" (erreur)
+  - Pas de notification d'erreur admin si l'extraction a déjà été effectuée
+  - Notification admin uniquement si une action a été effectuée (extraction ou embeddings)
+  - L'envoi massif est toujours déclenché en cas de succès
+
 ### [10.1.7](https://github.com/mendoc/zoomchat/compare/v10.1.6...v10.1.7) (2025-11-07)
+
+
+### 🐛 Corrections de bugs
+
+* **cloudbuild**: échappement des variables bash avec $$ dans cloudbuild.yaml
+  - Cloud Build interprétait $VERSION comme substitution au lieu de variable bash
+  - Utilisation de bash entrypoint pour l'étape de build Docker
 
 ### [10.1.6](https://github.com/mendoc/zoomchat/compare/v10.1.5...v10.1.6) (2025-11-07)
 
 ### [10.1.5](https://github.com/mendoc/zoomchat/compare/v10.1.4...v10.1.5) (2025-11-07)
+
+
+### ✨ Nouvelles fonctionnalités
+
+* **déploiement automatique**: ajout du workflow Cloud Build avec versioning automatique
+  - Fichier `cloudbuild.yaml` pour déploiement automatique sur push GitHub
+  - Suffixe de révision Cloud Run basé sur le numéro de version (ex: `v10-1-8`)
+  - Traçabilité complète : chaque révision correspond à une version Git
+  - Documentation complète des deux modes de déploiement (automatique vs manuel)
 
 ### [10.1.4](https://github.com/mendoc/zoomchat/compare/v10.1.3...v10.1.4) (2025-11-07)
 
