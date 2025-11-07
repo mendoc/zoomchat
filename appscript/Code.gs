@@ -35,7 +35,7 @@ function checkNewEmails() {
     }
 
     // Configuration - URL du serveur Cloud Run
-    const serverUrl = "https://zoomchat.ongoua.pro/webhook";
+    const serverUrl = "https://zoomchat.ongoua.pro";
 
     // 1. Enregistrer la parution dans la base de données
     Logger.log("📝 Enregistrement de la parution...");
