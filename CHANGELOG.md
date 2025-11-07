@@ -1,15 +1,44 @@
 # Historique des versions
-### [10.1.2](https://github.com/mendoc/zoomchat/compare/v10.1.0...v10.1.2) (2025-11-07)
+### [10.1.3](https://github.com/mendoc/zoomchat/compare/v10.1.2...v10.1.3) (2025-11-07)
 
-### [10.1.1](https://github.com/mendoc/zoomchat/compare/v10.1.0...v10.1.1) (2025-11-07)
-
-## [10.1.0](https://github.com/mendoc/zoomchat/compare/v10.0.6...v10.1.0) (2025-11-07)
+## [10.1.2](https://github.com/mendoc/zoomchat/compare/v10.0.6...v10.1.2) (2025-11-07)
 
 
 ### ✨ Nouvelles fonctionnalités
 
-* ajout d'un message introductif lors de l'envoi en masse du PDF ([f36e3f0](https://github.com/mendoc/zoomchat/commit/f36e3f07984749804bacefe71d8c1cac8c38b3cc))
-* migration pour permettre telegram_file_id NULL ([4ffc0fd](https://github.com/mendoc/zoomchat/commit/4ffc0fd398cbe3938fb8397daa01cde7e8c70a1b))
+* **workflow extraction**: refonte complète du workflow d'extraction avec indexation préalable ([c97bb00](https://github.com/mendoc/zoomchat/commit/c97bb00))
+  - Nouveau workflow en 3 étapes : POST /parution → POST /extract → POST /notify
+  - Garantit que les annonces sont extraites et indexées AVANT l'envoi du PDF aux abonnés
+  - Permet aux utilisateurs de rechercher immédiatement dans la parution dès réception
+  - Google Apps Script déclenche le processus en fire-and-forget
+  - Nouvelles routes serveur :
+    * POST /parution : enregistrement des parutions avec date de réception email
+    * POST /notify : envoi massif avec upload automatique à Telegram
+  - Routes modifiées :
+    * POST /extract : accepte numero, appelle /notify en cas de succès
+  - Notifications admin enrichies :
+    * Échec d'extraction (complet/partiel) avec statistiques
+    * Succès/échec d'envoi massif avec taux de réussite
+  - Script Apps Script mis à jour pour le nouveau workflow
+
+* **renommage PDF**: ajout du renommage automatique du PDF lors de l'envoi ([283b1f4](https://github.com/mendoc/zoomchat/commit/283b1f4))
+  - Format : ZOOM-HEBDO-{numero}-{id}.pdf
+  - Extrait l'ID depuis l'URL du PDF (ex: ?id=600)
+  - Appliqué pour l'admin et tous les abonnés
+
+* **migration base de données**: permettre telegram_file_id NULL ([4ffc0fd](https://github.com/mendoc/zoomchat/commit/4ffc0fd))
+  - Migration SQL pour permettre NULL sur telegram_file_id
+  - Nécessaire pour le nouveau workflow (file_id ajouté plus tard)
+  - Script de migration automatique créé
+
+* ajout d'un message introductif lors de l'envoi en masse du PDF ([f36e3f0](https://github.com/mendoc/zoomchat/commit/f36e3f0))
+
+
+### 🐛 Corrections de bugs
+
+* remplacement de BadRequestError par ValidationError ([0123168](https://github.com/mendoc/zoomchat/commit/0123168))
+  - Correction d'erreur d'import dans les routes
+  - BadRequestError n'existait pas dans shared/errors.js
 
 ### [10.0.7](https://github.com/mendoc/zoomchat/compare/v10.0.6...v10.0.7) (2025-11-07)
 
