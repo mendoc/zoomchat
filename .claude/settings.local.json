@@ -32,7 +32,8 @@
       "Bash(npm run lint:ci:*)",
       "Bash(timeout 15 node:*)",
       "Bash(npm run db:generate:*)",
-      "Bash(npm run db:migrate:*)"
+      "Bash(npm run db:migrate:*)",
+      "Bash(git tag:*)"
     ],
     "deny": [],
     "ask": []
