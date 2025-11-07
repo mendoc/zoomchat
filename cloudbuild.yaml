@@ -19,13 +19,12 @@ steps:
   # Étape 2: Build de l'image Docker
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build-image'
+    entrypoint: 'bash'
     args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/zoomchat:latest'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/zoomchat:$(cat /workspace/version.txt)'
-      - '.'
+      - '-c'
+      - |
+        VERSION=$$(cat /workspace/version.txt)
+        docker build -t gcr.io/$PROJECT_ID/zoomchat:latest -t gcr.io/$PROJECT_ID/zoomchat:$$VERSION .
 
   # Étape 3: Push de l'image vers GCR
   - name: 'gcr.io/cloud-builders/docker'
