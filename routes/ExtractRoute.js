@@ -40,79 +40,105 @@ export class ExtractRoute {
 
       logger.info({ numero, forceExtract }, 'Extraction demandée');
 
-      // Lancer l'extraction
-      const stats = await this.extractionOrchestrator.extractParution(numero, { forceExtract });
-
-      logger.info({ numero, stats }, 'Extraction terminée');
-
-      const parutionInfo = {
-        numero,
-        periode: stats.periode || 'N/A',
-        pdfUrl: stats.pdfUrl || 'N/A',
-      };
-
-      // Mapper les stats pour la notification admin
-      const notificationStats = {
-        totalPages: stats.geminiStats?.totalPages || 0,
-        pagesSuccess: stats.geminiStats?.pagesSuccess || 0,
-        pagesErrors: stats.geminiStats?.pagesErrors || 0,
-        totalAnnonces: stats.totalAnnoncesInParution || 0,
-        annoncesExtracted: stats.totalExtrait || 0,
-        annoncesSaved: stats.nombreInsereEnBase || 0,
-        annoncesWithoutRef: stats.nombreSansReference || 0,
-        embeddingsGenerated: stats.embeddingsGeneratedCount || 0,
-        geminiStats: stats.geminiStats,
-      };
-
-      // Vérifier s'il y a eu des erreurs d'extraction (échec complet ou partiel)
-      const hasErrors = stats.geminiStats?.pagesErrors > 0 || stats.totalExtrait === 0;
-
-      if (hasErrors) {
-        // Notifier l'admin de l'échec/erreur partielle
-        await this.adminNotifier.notifyExtractionFailure(
-          parutionInfo,
-          notificationStats,
-          null, // Pas d'exception, juste des erreurs dans le processus
-          stats.duration
-        );
-      } else {
-        // Notifier l'admin du succès de l'extraction
-        await this.adminNotifier.notifyExtraction(parutionInfo, notificationStats, stats.duration);
-
-        // Déclencher l'envoi massif du PDF aux abonnés
-        logger.info({ numero }, "Déclenchement de l'envoi massif après extraction réussie");
-
-        try {
-          // Créer un mock de req/res pour appeler notifyRoute
-          const mockReq = { body: { numero } };
-          const mockRes = {
-            json: () => {},
-            status: () => mockRes,
-          };
-          const mockNext = (error) => {
-            if (error) {
-              throw error;
-            }
-          };
-
-          await this.notifyRoute.handle(mockReq, mockRes, mockNext);
-        } catch (notifyError) {
-          logger.error(
-            { err: notifyError, numero },
-            "Erreur lors de l'envoi massif après extraction"
-          );
-          // On ne fait pas échouer la requête, l'extraction a réussi
-        }
-      }
-
-      res.json({
+      // Répondre immédiatement (202 Accepted) - Apps Script ne sera pas bloqué
+      res.status(202).json({
         success: true,
-        message: hasErrors
-          ? 'Extraction terminée avec des erreurs (voir notification admin)'
-          : 'Extraction et envoi massif terminés avec succès',
+        message: 'Extraction lancée en arrière-plan',
         numero,
-        stats,
       });
+
+      // Lancer l'extraction en arrière-plan (sans await)
+      this.extractionOrchestrator
+        .extractParution(numero, { forceExtract })
+        .then(async (stats) => {
+          logger.info({ numero, stats }, 'Extraction terminée');
+
+          const parutionInfo = {
+            numero,
+            periode: stats.periode || 'N/A',
+            pdfUrl: stats.pdfUrl || 'N/A',
+          };
+
+          // Mapper les stats pour la notification admin
+          const notificationStats = {
+            totalPages: stats.geminiStats?.totalPages || 0,
+            pagesSuccess: stats.geminiStats?.pagesSuccess || 0,
+            pagesErrors: stats.geminiStats?.pagesErrors || 0,
+            totalAnnonces: stats.totalAnnoncesInParution || 0,
+            annoncesExtracted: stats.totalExtrait || 0,
+            annoncesSaved: stats.nombreInsereEnBase || 0,
+            annoncesWithoutRef: stats.nombreSansReference || 0,
+            embeddingsGenerated: stats.embeddingsGeneratedCount || 0,
+            geminiStats: stats.geminiStats,
+          };
+
+          // Vérifier s'il y a eu des erreurs d'extraction (échec complet ou partiel)
+          const hasErrors = stats.geminiStats?.pagesErrors > 0 || stats.totalExtrait === 0;
+
+          if (hasErrors) {
+            // Notifier l'admin de l'échec/erreur partielle
+            await this.adminNotifier.notifyExtractionFailure(
+              parutionInfo,
+              notificationStats,
+              null, // Pas d'exception, juste des erreurs dans le processus
+              stats.duration
+            );
+          } else {
+            // Notifier l'admin du succès de l'extraction
+            await this.adminNotifier.notifyExtraction(
+              parutionInfo,
+              notificationStats,
+              stats.duration
+            );
+
+            // Déclencher l'envoi massif du PDF aux abonnés
+            logger.info({ numero }, "Déclenchement de l'envoi massif après extraction réussie");
+
+            try {
+              // Créer un mock de req/res pour appeler notifyRoute
+              const mockReq = { body: { numero } };
+              const mockRes = {
+                json: () => {},
+                status: () => mockRes,
+              };
+              const mockNext = (error) => {
+                if (error) {
+                  throw error;
+                }
+              };
+
+              await this.notifyRoute.handle(mockReq, mockRes, mockNext);
+            } catch (notifyError) {
+              logger.error(
+                { err: notifyError, numero },
+                "Erreur lors de l'envoi massif après extraction"
+              );
+              // On ne fait pas échouer la requête, l'extraction a réussi
+            }
+          }
+
+          logger.info({ numero }, 'Traitement complet terminé en arrière-plan');
+        })
+        .catch(async (error) => {
+          // Gérer les erreurs d'extraction en arrière-plan
+          logger.error({ err: error, numero }, "Erreur lors de l'extraction en arrière-plan");
+
+          // Notifier l'admin de l'échec critique
+          try {
+            await this.adminNotifier.notifyExtractionFailure(
+              {
+                numero,
+                periode: 'N/A',
+                pdfUrl: 'N/A',
+              },
+              null,
+              error,
+              0
+            );
+          } catch (notifyError) {
+            logger.error({ err: notifyError }, "Erreur lors de la notification d'échec");
+          }
+        });
     } catch (error) {
       // Notifier l'admin de l'échec critique
       try {

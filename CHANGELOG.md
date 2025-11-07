@@ -1,5 +1,17 @@
 # Historique des versions
+### [10.1.4](https://github.com/mendoc/zoomchat/compare/v10.1.3...v10.1.4) (2025-11-07)
+
 ### [10.1.3](https://github.com/mendoc/zoomchat/compare/v10.1.2...v10.1.3) (2025-11-07)
+
+
+### ✨ Nouvelles fonctionnalités
+
+* **extraction non-bloquante**: POST /extract répond immédiatement avec 202 Accepted
+  - Google Apps Script n'est plus bloqué pendant l'extraction
+  - L'extraction s'exécute en arrière-plan avec promise chain
+  - L'envoi massif est automatiquement déclenché après extraction réussie
+  - Notifications admin envoyées en arrière-plan
+  - Erreurs d'extraction gérées sans bloquer l'appelant
 
 ## [10.1.2](https://github.com/mendoc/zoomchat/compare/v10.0.6...v10.1.2) (2025-11-07)
 
