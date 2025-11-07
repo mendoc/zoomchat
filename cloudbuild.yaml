@@ -1,0 +1,72 @@
+# Configuration Cloud Build pour déploiement automatique sur Cloud Run
+# Trigger: push sur la branche main
+# Build l'image Docker et la déploie avec le numéro de version comme suffixe de révision
+
+steps:
+  # Étape 1: Extraire la version depuis package.json
+  - name: 'gcr.io/cloud-builders/npm'
+    id: 'extract-version'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+        VERSION_TAG=$(echo "$VERSION" | tr '.' '-')
+        echo "Version détectée: $VERSION (tag: v$VERSION_TAG)"
+        echo "$VERSION" > /workspace/version.txt
+        echo "$VERSION_TAG" > /workspace/version_tag.txt
+
+  # Étape 2: Build de l'image Docker
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-image'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/zoomchat:latest'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/zoomchat:$(cat /workspace/version.txt)'
+      - '.'
+
+  # Étape 3: Push de l'image vers GCR
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-image'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'gcr.io/$PROJECT_ID/zoomchat'
+
+  # Étape 4: Déploiement sur Cloud Run avec suffixe de version
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'deploy-cloud-run'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        VERSION=$(cat /workspace/version.txt)
+        VERSION_TAG=$(cat /workspace/version_tag.txt)
+        echo "Déploiement de la version $VERSION avec révision v$VERSION_TAG"
+
+        gcloud run deploy zoomchat-bot \
+          --image gcr.io/$PROJECT_ID/zoomchat:$VERSION \
+          --platform managed \
+          --region europe-west1 \
+          --allow-unauthenticated \
+          --revision-suffix "v$VERSION_TAG" \
+          --min-instances 0 \
+          --max-instances 5 \
+          --memory 512Mi \
+          --cpu 1 \
+          --timeout 1200
+
+# Options de build
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+
+# Timeout global (20 minutes max pour extraction + déploiement)
+timeout: '1200s'
+
+# Images à stocker dans GCR
+images:
+  - 'gcr.io/$PROJECT_ID/zoomchat:latest'
+  - 'gcr.io/$PROJECT_ID/zoomchat:$(cat /workspace/version.txt)'

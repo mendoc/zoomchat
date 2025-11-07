@@ -345,13 +345,46 @@ npm run release:patch   # Force PATCH version bump (1.0.0 → 1.0.1)
 
 ### Deployment
 
-**Le déploiement utilise un build Docker local** pour éviter les coûts Cloud Build :
+Le projet supporte **deux modes de déploiement** sur Google Cloud Run :
 
-#### Prérequis
+1. **Déploiement automatique via Cloud Build** (push sur GitHub)
+2. **Déploiement manuel local** (build Docker local)
+
+#### Mode 1 : Déploiement automatique (Cloud Build)
+
+**Déclenchement automatique** : À chaque `git push` sur la branche `main`, un Cloud Build se déclenche automatiquement via un trigger GitHub.
+
+**Caractéristiques** :
+- ✅ **Automatique** : Pas besoin de lancer de commande manuelle
+- ✅ **Versioning automatique** : Le numéro de version depuis `package.json` est utilisé comme suffixe de révision Cloud Run (ex: `v10-1-4`)
+- ✅ **Traçabilité** : Chaque révision Cloud Run correspond à une version Git spécifique
+- ⚠️ **Coûts** : Utilise les minutes de build Cloud Build (120 minutes/jour gratuites)
+
+**Configuration** : Le fichier `cloudbuild.yaml` définit le workflow de build et déploiement.
+
+**Workflow automatique** :
+1. Extraction du numéro de version depuis `package.json`
+2. Build de l'image Docker sur Cloud Build
+3. Push vers Google Container Registry avec tag de version
+4. Déploiement sur Cloud Run avec révision nommée `v{VERSION}` (ex: `v10-1-4`)
+
+**Pour déclencher un déploiement automatique** :
+```bash
+git push   # Le trigger GitHub Cloud Build se déclenche automatiquement
+```
+
+#### Mode 2 : Déploiement manuel local (économique)
+
+**Caractéristiques** :
+- ✅ **Économique** : Build 100% local, pas de coût Cloud Build
+- ✅ **Contrôle** : Déploiement manuel à la demande
+- ⚠️ **Prérequis** : Docker Desktop installé et démarré
+
+**Prérequis** :
 - **Docker Desktop** doit être installé et démarré
 - Authentification GCP configurée : `gcloud auth login`
 
-#### Workflow de déploiement
+**Commandes disponibles** :
 
 **Option 1 : Déploiement complet (push Git + deploy)**
 ```bash

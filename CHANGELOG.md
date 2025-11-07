@@ -1,5 +1,23 @@
 # Historique des versions
+### [10.1.5](https://github.com/mendoc/zoomchat/compare/v10.1.4...v10.1.5) (2025-11-07)
+
 ### [10.1.4](https://github.com/mendoc/zoomchat/compare/v10.1.3...v10.1.4) (2025-11-07)
+
+
+### ✨ Nouvelles fonctionnalités
+
+* **extraction non-bloquante**: POST /extract répond immédiatement avec 202 Accepted
+  - Google Apps Script n'est plus bloqué pendant l'extraction
+  - L'extraction s'exécute en arrière-plan avec promise chain
+  - L'envoi massif est automatiquement déclenché après extraction réussie
+  - Notifications admin envoyées en arrière-plan
+  - Erreurs d'extraction gérées sans bloquer l'appelant
+
+* **déploiement automatique**: ajout du workflow Cloud Build avec versioning automatique
+  - Fichier `cloudbuild.yaml` pour déploiement automatique sur push GitHub
+  - Suffixe de révision Cloud Run basé sur le numéro de version (ex: `v10-1-4`)
+  - Traçabilité complète : chaque révision correspond à une version Git
+  - Documentation complète des deux modes de déploiement (automatique vs manuel)
 
 ### [10.1.3](https://github.com/mendoc/zoomchat/compare/v10.1.2...v10.1.3) (2025-11-07)
 
